@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=17">
+<link rel="stylesheet" href="style.css?v=18">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -109,6 +109,16 @@
         </div>
       </form>
 
+      <div class="photo-box card">
+        <label class="photo-btn"><input type="file" id="photoIn" accept="image/*" capture="environment" hidden>📷 Foto de la comida</label>
+        <div id="photoPrev" class="hidden">
+          <img id="photoImg" alt="">
+          <input id="photoNote" placeholder="Nota opcional: medio plato, sin salsa, para 2…">
+          <div class="row"><button type="button" class="ghost" id="photoCancel">Cancelar</button><button type="button" class="primary" id="photoSave">Guardar</button></div>
+        </div>
+        <p class="muted small">Se apunta como pendiente y Claude la analiza más tarde.</p>
+      </div>
+
       <div id="frequentWrap" class="hidden">
         <p class="label pad">Frecuentes · toca para añadir</p>
         <div id="frequent" class="chips scroll"></div>
@@ -193,6 +203,7 @@
   </section>
 
   <section id="onboard" class="screen hidden"></section>
+  <section id="procesar" class="screen hidden"><header class="top"><h1>Fotos pendientes</h1></header><div id="procList"></div></section>
 
   <!-- Ficha de ejercicio -->
   <div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
@@ -224,6 +235,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=17"></script>
+<script type="module" src="app.js?v=18"></script>
 </body>
 </html>

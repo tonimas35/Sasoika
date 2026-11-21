@@ -34,7 +34,8 @@ function toast(msg) {
 function fail(error) { if (error) { console.error(error); toast("Error: " + (error.message || error)); return true; } return false; }
 
 // ---------- Navegación ----------
-const SCREENS = ["auth", "inicio", "comidas", "entrenos", "progreso", "ajustes", "onboard"];
+const SCREENS = ["auth", "inicio", "comidas", "entrenos", "progreso", "ajustes", "onboard", "procesar"];
+const ADMIN = "7b028a12-4d1e-4b43-8957-926c23165c6a";
 function show(name) {
   SCREENS.forEach((s) => $(s).classList.toggle("hidden", s !== name));
   $("tabs").classList.toggle("hidden", name === "auth" || name === "ajustes");
@@ -96,6 +97,7 @@ async function init() {
     await sb.from("goals").insert({ kcal: goals.kcal, protein: goals.protein, event_name: null, event_date: null, start_date: todayStr() });
     goals = { ...GOAL_DEFAULTS, event_name: null, event_date: null, start_date: todayStr() };
   }
+  if (user.id === ADMIN && new URLSearchParams(location.search).has("procesar")) return loadProcesar();
   if (!goals.onboarded && !sessionStorageGet("obSkip")) return startOnboarding();
   show("inicio");
 }
@@ -270,7 +272,7 @@ async function loadComidas() {
   const since = new Date(); since.setDate(since.getDate() - 60);
   const [today, recent] = await Promise.all([
     sb.from("meals").select("*").gte("eaten_at", startOfToday()).order("eaten_at"),
-    sb.from("meals").select("name, kcal, protein, eaten_at").gte("eaten_at", since.toISOString()).order("eaten_at", { ascending: false }),
+    sb.from("meals").select("name, kcal, protein, eaten_at, status").gte("eaten_at", since.toISOString()).order("eaten_at", { ascending: false }),
   ]);
   renderToday(today.data || []);
   renderFrequent(recent.data || []);
@@ -291,10 +293,14 @@ function renderToday(meals) {
   meals.forEach((m) => {
     const li = document.createElement("li");
     const time = new Date(m.eaten_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    li.innerHTML = `<div><div>${esc(m.name)}</div><div class="meta">${time} · ${m.kcal ?? "?"} kcal · ${fmt(m.protein) || "?"} g prot</div></div>
+    const pend = m.status === "pendiente";
+    li.innerHTML = `${m.photo_path ? `<img class="thumb" alt="">` : ""}<div style="flex:1"><div>${esc(pend ? "Foto pendiente de analizar" : m.name)}</div>
+      <div class="meta">${time} · ${pend ? `⏳ pendiente${m.notes ? " · " + esc(m.notes) : ""}` : `${m.kcal ?? "?"} kcal · ${fmt(m.protein) || "?"} g prot`}</div></div>
       <button class="del" aria-label="Borrar">✕</button>`;
+    if (m.photo_path) sb.storage.from("meal-photos").createSignedUrl(m.photo_path, 3600).then(({ data }) => { if (data) li.querySelector(".thumb").src = data.signedUrl; });
     li.querySelector(".del").onclick = async () => {
       if (!confirm(`¿Borrar "${m.name}"?`)) return;
+      if (m.photo_path) await sb.storage.from("meal-photos").remove([m.photo_path]);
       if (!fail((await sb.from("meals").delete().eq("id", m.id)).error)) loadComidas();
     };
     ul.appendChild(li);
@@ -303,7 +309,7 @@ function renderToday(meals) {
 
 function renderFrequent(recent) {
   const by = {};
-  recent.forEach((m) => {
+  recent.filter((m) => m.status !== "pendiente").forEach((m) => {
     const k = m.name.trim().toLowerCase();
     if (!by[k]) by[k] = { name: m.name.trim(), kcal: m.kcal, protein: m.protein, n: 0 };
     by[k].n++;
@@ -331,6 +337,65 @@ $("mealForm").addEventListener("submit", async (e) => {
   $("mealForm").reset(); toast("Comida guardada"); loadComidas();
 });
 
+// ---------- Fotos de comidas ----------
+let photoBlob = null;
+function resizeImage(file, max = 1280, q = 0.82) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob((b) => (b ? res(b) : rej(new Error("No se pudo comprimir la foto"))), "image/jpeg", q);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => rej(new Error("Formato de imagen no soportado"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+$("photoIn").addEventListener("change", async (e) => {
+  const f = e.target.files?.[0]; if (!f) return;
+  try { photoBlob = await resizeImage(f); } catch (err) { return fail(err); }
+  $("photoImg").src = URL.createObjectURL(photoBlob);
+  $("photoPrev").classList.remove("hidden");
+});
+$("photoCancel").onclick = () => { photoBlob = null; $("photoIn").value = ""; $("photoNote").value = ""; $("photoPrev").classList.add("hidden"); };
+$("photoSave").onclick = async () => {
+  if (!photoBlob) return;
+  const btn = $("photoSave"); btn.disabled = true; btn.textContent = "Subiendo…";
+  try {
+    const { data: meal, error } = await sb.from("meals").insert({ name: "Foto pendiente", status: "pendiente", notes: $("photoNote").value.trim() || null }).select("id").single();
+    if (error) throw error;
+    const path = `${user.id}/${meal.id}.jpg`;
+    const up = await sb.storage.from("meal-photos").upload(path, photoBlob, { contentType: "image/jpeg", upsert: true });
+    if (up.error) { await sb.from("meals").delete().eq("id", meal.id); throw up.error; }
+    await sb.from("meals").update({ photo_path: path }).eq("id", meal.id);
+    toast("Foto guardada ✓"); $("photoCancel").onclick(); loadComidas();
+  } catch (err) { fail(err); }
+  btn.disabled = false; btn.textContent = "Guardar";
+};
+
+// Página de procesado (solo administrador): ?procesar  ·  ?procesar&limpiar borra las ya procesadas
+async function loadProcesar() {
+  SCREENS.forEach((x) => $(x).classList.toggle("hidden", x !== "procesar")); $("tabs").classList.add("hidden");
+  const box = $("procList"); box.innerHTML = "Cargando…";
+  let cleaned = 0;
+  if (new URLSearchParams(location.search).has("limpiar")) {
+    const { data: paths } = await sb.rpc("processed_photo_paths");
+    const list = (paths || []).map((p) => (typeof p === "string" ? p : p.processed_photo_paths));
+    if (list.length) { const r = await sb.storage.from("meal-photos").remove(list); if (!r.error) { await sb.rpc("clear_photo_paths", { paths: list }); cleaned = list.length; } }
+  }
+  const { data: folders } = await sb.storage.from("meal-photos").list("", { limit: 100 });
+  const items = [];
+  for (const f of folders || []) {
+    const { data: files } = await sb.storage.from("meal-photos").list(f.name, { limit: 200, sortBy: { column: "created_at", order: "asc" } });
+    for (const x of files || []) if (x.name.endsWith(".jpg")) items.push(`${f.name}/${x.name}`);
+  }
+  const { data: urls } = items.length ? await sb.storage.from("meal-photos").createSignedUrls(items, 3600) : { data: [] };
+  box.innerHTML = `<p class="muted small pad" id="procSummary">${items.length} fotos en el almacenamiento${cleaned ? ` · ${cleaned} procesadas borradas` : ""}</p>` +
+    (urls || []).map((u, i) => `<div class="card proc"><span class="label">${esc(items[i].split("/")[0].slice(0, 8))} · comida ${esc(items[i].split("/")[1].replace(".jpg", ""))}</span><img src="${u.signedUrl}" alt=""></div>`).join("");
+}
+
 async function loadHistory() {
   const since = new Date(); since.setDate(since.getDate() - 30);
   const { data, error } = await sb.from("meals").select("*").gte("eaten_at", since.toISOString()).order("eaten_at", { ascending: false });
@@ -348,7 +413,7 @@ async function loadHistory() {
     return `<div class="card day-card">
       <div class="day-head"><b>${label}</b><span class="muted small">${fmt(k, 0)} kcal · ${fmt(p, 0)} g prot</span></div>
       <div class="mini-bar"><div style="width:${Math.min(100, (p / goals.protein) * 100)}%"></div></div>
-      <div class="day-meals">${ms.map((m) => `<div class="day-meal"><span>${esc(m.name)}</span><span>${m.kcal ?? "?"} kcal · ${fmt(m.protein) || "?"} g</span></div>`).join("")}</div>
+      <div class="day-meals">${ms.map((m) => `<div class="day-meal"><span>${esc(m.status === "pendiente" ? "📷 Foto pendiente" : m.name)}</span><span>${m.status === "pendiente" ? "⏳" : `${m.kcal ?? "?"} kcal · ${fmt(m.protein) || "?"} g`}</span></div>`).join("")}</div>
     </div>`;
   }).join("");
   box.querySelectorAll(".day-card").forEach((c) => c.addEventListener("click", () => c.classList.toggle("open")));

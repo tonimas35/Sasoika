@@ -244,7 +244,7 @@ function buildHeadNeck() {
   const prof = [[0, 0], [0.014, 0.027], [0.03, 0.043], [0.057, 0.06], [0.09, 0.071], [0.12, 0.077], [0.155, 0.084],
     [0.19, 0.085], [0.225, 0.082], [0.255, 0.072], [0.283, 0.051], [0.302, 0.023], [0.31, 0]];
   const head = mesh(new THREE.LatheGeometry(prof.map(([y, r]) => new THREE.Vector2(r, y)), 48), skinMat());
-  head.position.set(0, 1.575, 0.012); head.scale.set(0.96, 1, 1.12);
+  head.position.set(0, 1.585, 0.012); head.scale.set(1.0, 0.84, 1.1);
 
   for (const s of [-1, 1]) {
     const c = new THREE.CatmullRomCurve3([

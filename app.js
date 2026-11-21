@@ -559,7 +559,7 @@ async function show3D(mode) {
   mannequin?.disposeMannequin(); anim?.disposeAnim();
   try {
     if (mode === "anim" && ANIM_KEY[ex.name]) {
-      anim ||= await import("./anim.js?v=2");
+      anim ||= await import("./anim.js?v=3");
       await anim.mountAnim($("shModel"), ANIM_KEY[ex.name], { sex: goals.sex, highlight: prim });
     } else {
       mannequin ||= await import("./mannequin.js?v=5");

@@ -16,7 +16,7 @@ const disposables = [];
 let POSES = null;
 
 async function poses() {
-  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=2", import.meta.url)).then((r) => r.json());
+  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=3", import.meta.url)).then((r) => r.json());
   return POSES;
 }
 
@@ -180,8 +180,8 @@ function buildEquipment(key, J) {
       break;
     }
     case "extension_triceps": {
-      const top = V(0, 2.15, (hL.z + hR.z) / 2 + 0.15);
-      box(0.12, 2.2, 0.12, [0, 1.1, top.z + 0.08], 0, mat(EQUIP, 0.5));
+      const top = V(0, 2.1, (hL.z + hR.z) / 2 + 0.4);
+      box(0.08, 2.15, 0.08, [0, 1.07, top.z + 0.06], 0, mat(EQUIP_SOFT, 0.6));
       const rope = mat(EQUIP, 0.6);
       const ropeL = mesh(new THREE.CylinderGeometry(0.006, 0.006, 1, 6), rope, scene); // se actualiza cada frame
       return () => { const a = wp(J.handL).add(wp(J.handR)).multiplyScalar(0.5); ropeL.position.copy(a).add(top).multiplyScalar(0.5); ropeL.scale.y = a.distanceTo(top); ropeL.quaternion.setFromUnitVectors(V(0, 1, 0), top.clone().sub(a).normalize()); };

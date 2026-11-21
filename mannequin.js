@@ -134,7 +134,7 @@ export function paintMuscles(intensities = {}) {
   pending = intensities;
   for (const [name, list] of muscles) {
     const t = clamp(intensities[name] || 0, 0, 1);
-    const c = MUSCLE_0.clone().lerp(MUSCLE_1, t === 0 ? 0 : 0.18 + 0.72 * t);
+    const c = MUSCLE_0.clone().lerp(MUSCLE_1, t === 0 ? 0 : 0.3 + 0.7 * t);
     list.forEach((m) => m.material.color.copy(c));
   }
 }

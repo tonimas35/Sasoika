@@ -16,7 +16,7 @@ const disposables = [];
 let POSES = null;
 
 async function poses() {
-  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=1", import.meta.url)).then((r) => r.json());
+  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=2", import.meta.url)).then((r) => r.json());
   return POSES;
 }
 
@@ -226,7 +226,7 @@ export async function mountAnim(container, key, { sex = "hombre", highlight = []
   scene.updateMatrixWorld(true);
   const bb = new THREE.Box3().setFromObject(J.root); const c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
   camera = new THREE.PerspectiveCamera(30, w / h, 0.1, 40);
-  const dist = Math.max(sz.y, sz.z * 0.8, sz.x) / (2 * Math.tan(D(15))) * 1.18;
+  const dist = Math.max(sz.y, sz.z * 0.8, sz.x) / (2 * Math.tan(D(15))) * 1.55;
   camera.position.set(c.x + dist * 0.72, c.y + dist * 0.18, c.z + dist * 0.7);
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.copy(c); controls.enableZoom = false; controls.enablePan = false; controls.enableDamping = true;

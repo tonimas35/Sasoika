@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -195,6 +195,26 @@
     <button class="ghost wide" id="logoutBtn">Cerrar sesión</button>
   </section>
 
+  <!-- Ficha de ejercicio -->
+  <div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
+    <div class="sheet-panel">
+      <header class="sheet-head"><div><p class="label" id="shTarget"></p><h2 id="shName"></h2></div><button class="icon" id="shClose" aria-label="Cerrar">✕</button></header>
+      <div id="shModel" class="mannequin sheet-model"></div>
+      <div class="sheet-legend"><span><i class="p"></i>Principal</span><span><i class="s"></i>Secundario</span><span id="shMuscles" class="muted"></span></div>
+      <div class="sheet-stats">
+        <div><span class="label">Series</span><b id="shSets"></b></div>
+        <div><span class="label">Tempo</span><b id="shTempo"></b></div>
+        <div><span class="label">Descanso</span><b id="shRest"></b></div>
+      </div>
+      <div class="sheet-sec"><h3>Cómo hacerlo</h3><ol id="shSteps"></ol></div>
+      <div class="sheet-sec"><h3>Errores típicos</h3><ul id="shErrors" class="errs"></ul></div>
+      <div class="sheet-sec"><h3>Respiración</h3><p id="shBreath"></p></div>
+      <div class="sheet-sec"><h3>Tu historial</h3><p id="shHist" class="muted"></p></div>
+      <div class="sheet-sec"><h3>Mis notas</h3><textarea id="shNotes" rows="3" placeholder="Ajustes de la máquina, sensaciones, pesos…"></textarea><p class="muted small" id="shNotesSt"></p></div>
+    </div>
+  </div>
+  <button id="restTimer" class="rest hidden" aria-label="Temporizador de descanso"></button>
+
   <nav id="tabs" class="hidden">
     <button data-tab="inicio" class="active">Inicio</button>
     <button data-tab="comidas">Comidas</button>
@@ -203,6 +223,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=9"></script>
+<script type="module" src="app.js?v=10"></script>
 </body>
 </html>

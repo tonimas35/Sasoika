@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { ROUTINES, KIND_LABEL, MUSCLES, KIND_MUSCLES, MUSCLE_LABEL } from "./routines.js";
+import { ROUTINES, KIND_LABEL, MUSCLES, KIND_MUSCLES, MUSCLE_LABEL, DETAILS } from "./routines.js?v=10";
 
 const SUPABASE_URL = "https://zxgmtfqgctbwnhykuzyd.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WRU0kZGeWv5Yyr6nvidb8Q_fDujckjs"; // clave pública; los datos están protegidos por RLS
@@ -373,7 +373,7 @@ async function addSet(ex, mine, values) {
   const w = await todayWorkout(currentKind, true);
   if (!w) return;
   const row = { workout_id: w.id, exercise: ex.name, set_no: mine.length + 1, ...values };
-  if (!fail((await sb.from("sets").insert(row)).error)) { toast(`Serie ${row.set_no} guardada`); loadEntrenos(); }
+  if (!fail((await sb.from("sets").insert(row)).error)) { toast(`Serie ${row.set_no} guardada`); startRest(DETAILS[ex.name]?.rest || 90); loadEntrenos(); }
 }
 
 function exerciseCard(ex, mine, last) {
@@ -381,7 +381,7 @@ function exerciseCard(ex, mine, last) {
   card.className = "card";
   const lastTxt = last.length ? `Última vez (${relDay(last[0].workouts.day)}): ${last.map(setLabel).join(", ")}` : "Sin registros previos";
   card.innerHTML = `
-    <div class="ex-head"><span class="ex-name">${esc(ex.name)}</span>${ex.target ? `<span class="ex-target">${ex.target}</span>` : ""}</div>
+    <div class="ex-head"><span class="ex-name ${DETAILS[ex.name] ? "tap" : ""}">${esc(ex.name)}</span>${ex.target ? `<span class="ex-target">${ex.target}</span>` : ""}</div>
     <div class="ex-last">${esc(lastTxt)}</div>
     <div class="chips"></div>
     <form class="set-row">
@@ -392,6 +392,7 @@ function exerciseCard(ex, mine, last) {
       <button class="primary" type="submit">＋</button>
     </form>`;
 
+  card.querySelector(".ex-name.tap")?.addEventListener("click", () => openSheet(ex));
   const chips = card.querySelector(".chips");
   mine.forEach((s) => {
     const c = document.createElement("button");
@@ -491,13 +492,89 @@ async function renderRoutineView() {
 
   $("routineView").innerHTML = planHtml + Object.entries(ROUTINES).map(([k, list]) => `
     <div class="section-head"><h2>${KIND_LABEL[k]}</h2></div>
-    ${list.map((ex, i) => `<div class="card routine-ex">
-      <div class="ex-head"><span class="ex-name">${i + 1}. ${esc(ex.name)}</span><span class="ex-target">${ex.target}</span></div>
+    ${list.map((ex, i) => `<div class="card routine-ex" data-k="${k}" data-i="${i}">
+      <div class="ex-head"><span class="ex-name tap">${i + 1}. ${esc(ex.name)}</span><span class="ex-target">${ex.target}</span></div>
       <div class="muscles">${Object.keys(MUSCLES[ex.name] || {}).map((m) => `<span class="mchip">${MUSCLE_LABEL[m]}</span>`).join("")}</div>
       ${ex.tip ? `<div class="tip">${esc(ex.tip)}</div>` : ""}
     </div>`).join("")}`).join("") +
-    `<p class="muted small pad">Descanso: 2 min en los ejercicios grandes, 60-90 s en el resto. Cuando hagas el máximo del rango en todas las series, sube el peso.</p>`;
+    `<p class="muted small pad">Toca un ejercicio para ver la ficha completa. Cuando hagas el máximo del rango en todas las series, sube el peso.</p>`;
+  $("routineView").querySelectorAll(".routine-ex").forEach((c) => c.addEventListener("click", () => openSheet(ROUTINES[c.dataset.k][+c.dataset.i])));
 }
+
+// ---------- Ficha de ejercicio ----------
+let notesTimer = null;
+async function openSheet(ex) {
+  const d = DETAILS[ex.name]; if (!d) return;
+  const mus = MUSCLES[ex.name] || {};
+  const prim = Object.keys(mus).filter((m) => mus[m] >= 0.8), sec = Object.keys(mus).filter((m) => mus[m] < 0.8);
+  $("shName").textContent = ex.name;
+  $("shTarget").textContent = prim.map((m) => MUSCLE_LABEL[m]).join(" · ");
+  $("shMuscles").textContent = sec.length ? "Ayudan: " + sec.map((m) => MUSCLE_LABEL[m]).join(", ") : "";
+  const week = Math.max(1, Math.floor(daysBetween(goals.start_date || todayStr(), todayStr()) / 7) + 1);
+  const range = (ex.target.split("×")[1] || "").trim();
+  $("shSets").textContent = week <= 2 && ex.type !== "time" ? `2-3 × ${range}` : ex.target;
+  $("shTempo").textContent = d.tempo;
+  $("shRest").textContent = d.rest >= 120 ? `${d.rest / 60} min` : `${d.rest} s`;
+  $("shSteps").innerHTML = d.steps.map((x) => `<li>${esc(x)}</li>`).join("");
+  $("shErrors").innerHTML = d.errors.map((x) => `<li>${esc(x)}</li>`).join("");
+  $("shBreath").textContent = d.breath;
+  $("shHist").textContent = "Cargando…"; $("shNotes").value = ""; $("shNotesSt").textContent = "";
+  $("sheet").classList.remove("hidden"); document.body.style.overflow = "hidden";
+  $("sheet").querySelector(".sheet-panel").scrollTop = 0;
+
+  // Músculos en 3D: principal en negro, secundarios en gris
+  try {
+    mannequin ||= await import("./mannequin.js?v=5");
+    mannequin.mountMannequin($("shModel"));
+    mannequin.paintMuscles(Object.fromEntries([...prim.map((m) => [m, 1]), ...sec.map((m) => [m, 0.35])]));
+  } catch (e) { console.error(e); }
+
+  const [hist, note] = await Promise.all([
+    sb.from("sets").select("weight_kg, reps, seconds, workout_id, workouts!inner(day)").eq("exercise", ex.name).order("created_at", { ascending: false }).limit(200),
+    sb.from("exercise_notes").select("notes").eq("exercise", ex.name).maybeSingle(),
+  ]);
+  const rows = hist.data || [];
+  if (!rows.length) $("shHist").textContent = "Aún no lo has hecho. ¡Empieza suave!";
+  else {
+    const lastW = rows[0].workout_id, last = rows.filter((r) => r.workout_id === lastW).reverse();
+    const score = (r) => (r.weight_kg ? r.weight_kg * 1000 + (r.reps || 0) : (r.reps || r.seconds || 0));
+    const best = rows.reduce((a, b) => (score(b) > score(a) ? b : a));
+    const sessions = new Set(rows.map((r) => r.workout_id)).size;
+    $("shHist").innerHTML = `Última vez (${relDay(last[0].workouts.day)}): <b>${last.map(setLabel).join(", ")}</b><br>Mejor serie: <b>${setLabel(best)}</b> · ${sessions} ${sessions === 1 ? "sesión" : "sesiones"}`;
+  }
+  $("shNotes").value = note.data?.notes || "";
+  $("shNotes").oninput = () => {
+    clearTimeout(notesTimer); $("shNotesSt").textContent = "…";
+    notesTimer = setTimeout(async () => {
+      const { error } = await sb.from("exercise_notes").upsert({ user_id: user.id, exercise: ex.name, notes: $("shNotes").value, updated_at: new Date().toISOString() });
+      $("shNotesSt").textContent = error ? "No se ha podido guardar" : "Guardado ✓";
+    }, 700);
+  };
+}
+function closeSheet() {
+  $("sheet").classList.add("hidden"); document.body.style.overflow = "";
+  mannequin?.disposeMannequin();
+}
+$("shClose").onclick = closeSheet;
+$("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
+
+// ---------- Temporizador de descanso ----------
+let restInt = null;
+function startRest(sec) {
+  clearInterval(restInt);
+  const el = $("restTimer"), end = Date.now() + sec * 1000;
+  el.classList.remove("hidden", "done");
+  const tick = () => {
+    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    if (left > 0) { el.innerHTML = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}<small>descanso · toca para saltar</small>`; return; }
+    clearInterval(restInt);
+    el.classList.add("done"); el.innerHTML = "¡A por la siguiente serie!";
+    try { navigator.vibrate?.([200, 100, 200]); } catch {}
+    setTimeout(() => el.classList.add("hidden"), 5000);
+  };
+  tick(); restInt = setInterval(tick, 250);
+}
+$("restTimer").onclick = () => { clearInterval(restInt); $("restTimer").classList.add("hidden"); };
 
 // ---------- Progreso ----------
 async function loadProgreso() {

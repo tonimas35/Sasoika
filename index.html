@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -189,6 +189,7 @@
         <label>Calorías / día<input id="goalKcal" type="number" inputmode="numeric"></label>
         <label>Proteína / día (g)<input id="goalProt" type="number" inputmode="numeric"></label>
       </div>
+      <label>Figura de las animaciones<select id="gSex"><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select></label>
       <label>Entrenos de gimnasio por semana<input id="gSessions" type="number" inputmode="numeric" min="1" max="7"></label>
       <button class="primary" type="submit">Guardar</button>
     </form>
@@ -199,6 +200,7 @@
   <div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
     <div class="sheet-panel">
       <header class="sheet-head"><div><p class="label" id="shTarget"></p><h2 id="shName"></h2></div><button class="icon" id="shClose" aria-label="Cerrar">✕</button></header>
+      <div class="seg two sheet-seg" id="shSeg"><button data-v="anim" class="active">Ejecución</button><button data-v="musc">Músculos</button></div>
       <div id="shModel" class="mannequin sheet-model"></div>
       <div class="sheet-legend"><span><i class="p"></i>Principal</span><span><i class="s"></i>Secundario</span><span id="shMuscles" class="muted"></span></div>
       <div class="sheet-stats">
@@ -223,6 +225,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=10"></script>
+<script type="module" src="app.js?v=11"></script>
 </body>
 </html>

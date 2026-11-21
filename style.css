@@ -206,3 +206,4 @@ textarea:focus { outline: none; border-color: var(--ink); background: #fff; }
   box-shadow: 0 8px 30px rgba(0,0,0,.18); font-variant-numeric: tabular-nums; }
 .rest small { font-weight: 500; font-size: 12px; opacity: .7; margin-left: 8px; }
 .rest.done { background: var(--ok); }
+.sheet-seg { margin-bottom: 10px; }

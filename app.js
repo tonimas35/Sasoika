@@ -17,7 +17,7 @@ const fmt = (n, dec = 1) => (n == null ? "" : Number(n).toLocaleString("es-ES", 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const GOAL_DEFAULTS = { kcal: 2300, protein: 140, event_name: "Vietnam", event_date: "2027-01-16", start_date: "2026-11-21",
-  target_weight: null, target_waist: null, weekly_sessions: 3 };
+  target_weight: null, target_waist: null, weekly_sessions: 3, sex: "hombre" };
 
 let user = null;
 let goals = { ...GOAL_DEFAULTS };
@@ -102,13 +102,14 @@ function fillGoalsForm() {
   $("gWaist").value = goals.target_waist ?? "";
   $("goalKcal").value = goals.kcal; $("goalProt").value = goals.protein;
   $("gSessions").value = goals.weekly_sessions;
+  $("gSex").value = goals.sex || "hombre";
 }
 $("goalsForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const num = (id) => ($(id).value === "" ? null : +$(id).value);
   const g = { user_id: user.id, kcal: num("goalKcal") || 0, protein: num("goalProt") || 0,
     event_name: $("gEventName").value.trim() || null, event_date: $("gEventDate").value || null, start_date: $("gStartDate").value || null,
-    target_weight: num("gWeight"), target_waist: num("gWaist"), weekly_sessions: num("gSessions") || 3, updated_at: new Date().toISOString() };
+    target_weight: num("gWeight"), target_waist: num("gWaist"), weekly_sessions: num("gSessions") || 3, sex: $("gSex").value, updated_at: new Date().toISOString() };
   if (fail((await sb.from("goals").upsert(g)).error)) return;
   goals = { ...GOAL_DEFAULTS, ...g }; toast("Objetivos guardados"); show("inicio");
 });
@@ -522,12 +523,9 @@ async function openSheet(ex) {
   $("sheet").classList.remove("hidden"); document.body.style.overflow = "hidden";
   $("sheet").querySelector(".sheet-panel").scrollTop = 0;
 
-  // Músculos en 3D: principal en negro, secundarios en gris
-  try {
-    mannequin ||= await import("./mannequin.js?v=5");
-    mannequin.mountMannequin($("shModel"));
-    mannequin.paintMuscles(Object.fromEntries([...prim.map((m) => [m, 1]), ...sec.map((m) => [m, 0.35])]));
-  } catch (e) { console.error(e); }
+  sheetEx = { ex, prim, sec };
+  document.querySelectorAll("#shSeg button").forEach((b) => b.classList.toggle("active", b.dataset.v === "anim"));
+  show3D("anim");
 
   const [hist, note] = await Promise.all([
     sb.from("sets").select("weight_kg, reps, seconds, workout_id, workouts!inner(day)").eq("exercise", ex.name).order("created_at", { ascending: false }).limit(200),
@@ -551,9 +549,32 @@ async function openSheet(ex) {
     }, 700);
   };
 }
+const ANIM_KEY = { "Dominadas agarre neutro": "dominadas", "Prensa": "prensa", "Press pecho mancuernas": "press_pecho",
+  "Curl femoral tumbado": "curl_femoral", "Curl bíceps": "curl_biceps", "Plancha": "plancha", "Fondos": "fondos",
+  "Peso muerto rumano": "peso_muerto_rumano", "Remo en máquina": "remo_maquina", "Press militar": "press_militar",
+  "Extensión tríceps": "extension_triceps", "Elevación de piernas": "elevacion_piernas" };
+let sheetEx = null, anim = null;
+async function show3D(mode) {
+  const { ex, prim, sec } = sheetEx;
+  mannequin?.disposeMannequin(); anim?.disposeAnim();
+  try {
+    if (mode === "anim" && ANIM_KEY[ex.name]) {
+      anim ||= await import("./anim.js?v=1");
+      await anim.mountAnim($("shModel"), ANIM_KEY[ex.name], { sex: goals.sex, highlight: prim });
+    } else {
+      mannequin ||= await import("./mannequin.js?v=5");
+      mannequin.mountMannequin($("shModel"));
+      mannequin.paintMuscles(Object.fromEntries([...prim.map((m) => [m, 1]), ...sec.map((m) => [m, 0.35])]));
+    }
+  } catch (e) { console.error(e); }
+}
+document.querySelectorAll("#shSeg button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("#shSeg button").forEach((x) => x.classList.toggle("active", x === b));
+  show3D(b.dataset.v);
+}));
 function closeSheet() {
   $("sheet").classList.add("hidden"); document.body.style.overflow = "";
-  mannequin?.disposeMannequin();
+  mannequin?.disposeMannequin(); anim?.disposeAnim();
 }
 $("shClose").onclick = closeSheet;
 $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });

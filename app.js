@@ -191,7 +191,7 @@ async function loadInicio() {
 async function renderMannequin(inten) {
   try {
     if (!mannequin) {
-      mannequin = await import("./mannequin.js");
+      mannequin = await import("./mannequin.js?v=5");
       mannequin.mountMannequin($("mannequin"));
     } else if (!$("mannequin").querySelector("canvas")) {
       mannequin.mountMannequin($("mannequin"));

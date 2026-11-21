@@ -1,6 +1,6 @@
-# Indarka
+# Sasoika
 
-«Indarka»: con fuerza, en euskera.
+«Sasoika»: de *sasoian egon*, estar en forma, en euskera.
 
 App web mínima para registrar comidas y entrenos (objetivo: Vietnam, enero 2027).
 

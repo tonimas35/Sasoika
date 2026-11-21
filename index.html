@@ -3,20 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#f4f4f2">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Indarka</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Sasoika</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
   <!-- Login -->
   <section id="auth" class="screen hidden">
-    <h1 class="brand">Indarka</h1>
+    <h1 class="brand">Sasoika</h1>
     <p class="muted">Comidas y entrenos, sin complicaciones.</p>
     <form id="authForm" class="card">
       <input id="email" type="email" placeholder="Email" autocomplete="email" required>
@@ -37,21 +40,28 @@
       <button class="icon" id="settingsBtn" aria-label="Ajustes">⚙︎</button>
     </header>
 
-    <div class="card">
-      <div class="meter">
-        <div class="meter-head"><span>Proteína</span><span><b id="protVal">0</b> / <span id="protGoal">0</span> g</span></div>
-        <div class="bar"><div id="protBar" class="fill prot"></div></div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-head"><span class="label">Proteína</span>
+          <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="protBar" cx="18" cy="18" r="15" class="ring-fg"/></svg>
+        </div>
+        <div class="big"><span id="protVal">0</span><small> g</small></div>
+        <div class="label">de <span id="protGoal">0</span> g</div>
       </div>
-      <div class="meter">
-        <div class="meter-head"><span>Calorías</span><span><b id="kcalVal">0</b> / <span id="kcalGoal">0</span> kcal</span></div>
-        <div class="bar"><div id="kcalBar" class="fill kcal"></div></div>
+      <div class="tile">
+        <div class="tile-head"><span class="label">Calorías</span>
+          <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="kcalBar" cx="18" cy="18" r="15" class="ring-fg"/></svg>
+        </div>
+        <div class="big"><span id="kcalVal">0</span><small> kcal</small></div>
+        <div class="label">de <span id="kcalGoal">0</span> kcal</div>
       </div>
     </div>
 
     <button class="card next" id="nextBtn">
-      <span class="muted small">Toca entrenar</span>
+      <span class="label">Toca entrenar</span>
       <span class="next-title" id="nextTitle">Rutina A</span>
       <span class="muted small" id="lastWorkout"></span>
+      <span class="next-cta">Empezar →</span>
     </button>
 
     <div class="section-head">

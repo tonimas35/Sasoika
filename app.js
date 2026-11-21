@@ -109,12 +109,15 @@ function renderMeals(meals) {
   const prot = meals.reduce((s, m) => s + Number(m.protein || 0), 0);
   $("kcalVal").textContent = fmt(kcal); $("kcalGoal").textContent = goals.kcal;
   $("protVal").textContent = fmt(prot); $("protGoal").textContent = goals.protein;
-  $("kcalBar").style.width = Math.min(100, (kcal / goals.kcal) * 100) + "%";
+  const C = 94.25; // circunferencia del anillo (r=15)
+  const ring = (el, frac) => { el.style.strokeDashoffset = C * (1 - Math.max(0, Math.min(1, frac))); };
+  ring($("kcalBar"), kcal / goals.kcal);
   $("kcalBar").classList.toggle("over", kcal > goals.kcal * 1.05);
-  $("protBar").style.width = Math.min(100, (prot / goals.protein) * 100) + "%";
+  ring($("protBar"), prot / goals.protein);
+  $("protBar").classList.toggle("done", prot >= goals.protein);
 
   const ul = $("mealList");
-  ul.innerHTML = meals.length ? "" : `<li class="empty" style="justify-content:center">Nada registrado hoy</li>`;
+  ul.innerHTML = meals.length ? "" : `<li class="empty">Nada registrado hoy</li>`;
   meals.forEach((m) => {
     const li = document.createElement("li");
     const time = new Date(m.eaten_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
@@ -320,8 +323,8 @@ function lineChart(el, pts, unit) {
   const last = pts[pts.length - 1];
   const d = (s) => new Date(s).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
-    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="var(--accent)"/>`).join("")}
+    <path d="${path}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="#fff" stroke="var(--ink)" stroke-width="2"/>`).join("")}
     <text x="${P}" y="14" fill="var(--muted)" font-size="11">${fmt(max)} ${unit}</text>
     <text x="${P}" y="${H - 6}" fill="var(--muted)" font-size="11">${d(pts[0][0])}</text>
     <text x="${W - P}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="end">${d(last[0])} · ${fmt(last[1])} ${unit}</text>
@@ -333,7 +336,7 @@ function barChart(el, data) {
   const bw = (W - 2 * P) / data.length;
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
     ${data.map((d, i) => { const h = (d[1] / max) * (H - 2 * P); return `
-      <rect x="${P + i * bw + 3}" y="${H - P - h}" width="${bw - 6}" height="${h}" rx="4" fill="${d[1] >= 4 ? "var(--accent)" : "#3a3f4b"}"/>
+      <rect x="${P + i * bw + 3}" y="${H - P - h}" width="${bw - 6}" height="${h}" rx="4" fill="${i === data.length - 1 ? "var(--ink)" : d[1] >= 3 ? "#c9c9c4" : "#e4e4e0"}"/>
       ${d[1] ? `<text x="${P + i * bw + bw / 2}" y="${H - P - h - 4}" fill="var(--muted)" font-size="11" text-anchor="middle">${d[1]}</text>` : ""}`; }).join("")}
     <line x1="${P}" x2="${W - P}" y1="${H - P}" y2="${H - P}" stroke="var(--line)"/>
     <text x="${W - P}" y="${H - 4}" fill="var(--muted)" font-size="11" text-anchor="end">esta semana</text>

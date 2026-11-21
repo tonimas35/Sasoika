@@ -448,8 +448,48 @@ $("simpleSave").onclick = async () => {
   if (!fail((await sb.from("workouts").update({ notes: $("simpleNotes").value || null }).eq("id", w.id)).error)) { toast("Registrado"); loadEntrenos(); }
 };
 
-function renderRoutineView() {
-  $("routineView").innerHTML = Object.entries(ROUTINES).map(([k, list]) => `
+// Plan semanal: lunes, viernes y domingo gimnasio (alternando A/B); jueves fútbol
+const PLAN = { 1: "gym", 4: "Futbol", 5: "gym", 0: "gym" }; // getDay(): 0 = domingo
+const DOW = ["L", "M", "X", "J", "V", "S", "D"];
+function phaseOf(week) {
+  if (week <= 2) return { name: "Readaptación", txt: "2-3 series, lejos del fallo (3-4 reps en reserva)." };
+  if (week <= 7) return { name: "Progresión", txt: "3 series, 1-2 reps en reserva. Sube peso al llegar al tope del rango." };
+  return { name: "Puesta a punto", txt: "Mantén cargas y llega descansado al viaje." };
+}
+
+async function renderRoutineView() {
+  const today = todayStr(), mon = mondayOf(today);
+  const { data } = await sb.from("workouts").select("day, kind").gte("day", addDays(mon, -21)).order("day").order("id");
+  const done = {};
+  (data || []).forEach((w) => (done[w.day] ||= []).push(w.kind));
+  const lastAB = [...(data || [])].reverse().find((w) => w.kind === "A" || w.kind === "B")?.kind;
+  let next = lastAB === "A" ? "B" : "A";
+
+  const cell = (d) => {
+    const dow = new Date(d + "T12:00:00").getDay();
+    const k = done[d];
+    let label = "", cls = "";
+    if (k?.length) { label = k.map((x) => (x === "Futbol" ? "⚽" : x === "Cardio" ? "🚴" : x)).join(""); cls = "done"; }
+    else if (d >= today && PLAN[dow]) {
+      if (PLAN[dow] === "gym") { label = next; next = next === "A" ? "B" : "A"; }
+      else label = "⚽";
+      cls = "plan";
+    } else if (d < today && PLAN[dow]) { label = "·"; cls = "miss"; }
+    return `<div class="pday ${cls} ${d === today ? "today" : ""}"><span>${DOW[(dow + 6) % 7]}</span><b>${label || "&nbsp;"}</b></div>`;
+  };
+  const week = (start) => Array.from({ length: 7 }, (_, i) => cell(addDays(start, i))).join("");
+
+  const weekN = Math.max(1, Math.floor(daysBetween(goals.start_date || today, today) / 7) + 1);
+  const ph = phaseOf(weekN);
+  const planHtml = `
+    <div class="section-head"><h2>Plan</h2><span class="label">Semana ${weekN} · ${ph.name}</span></div>
+    <div class="card">
+      <span class="label">Esta semana</span><div class="pweek">${week(mon)}</div>
+      <span class="label">Semana que viene</span><div class="pweek">${week(addDays(mon, 7))}</div>
+      <p class="muted small">Gimnasio lunes, viernes y domingo alternando A y B (si un día no puedes, la siguiente sesión sigue el orden). Jueves fútbol: el viernes, menos carga de pierna. ${ph.txt}</p>
+    </div>`;
+
+  $("routineView").innerHTML = planHtml + Object.entries(ROUTINES).map(([k, list]) => `
     <div class="section-head"><h2>${KIND_LABEL[k]}</h2></div>
     ${list.map((ex, i) => `<div class="card routine-ex">
       <div class="ex-head"><span class="ex-name">${i + 1}. ${esc(ex.name)}</span><span class="ex-target">${ex.target}</span></div>

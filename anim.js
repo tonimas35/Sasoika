@@ -16,6 +16,7 @@ const disposables = [];
 let POSES = null;
 
 async function poses() {
+  if (globalThis.__SASOIKA_POSES) return globalThis.__SASOIKA_POSES;
   if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=3", import.meta.url)).then((r) => r.json());
   return POSES;
 }

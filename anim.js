@@ -192,7 +192,7 @@ function buildEquipment(key, J) {
 }
 
 // ---------- Escena ----------
-export async function mountAnim(container, key, { sex = "hombre", highlight = [] } = {}) {
+export async function mountAnim(container, key, { sex = "hombre", highlight = [], at = null } = {}) {
   disposeAnim();
   const P = (await poses())[key];
   if (!P) { container.innerHTML = `<p class="empty">Animación no disponible</p>`; return; }
@@ -238,7 +238,7 @@ export async function mountAnim(container, key, { sex = "hombre", highlight = []
   clock = new THREE.Clock();
   const ease = (x) => x * x * (3 - 2 * x);
   const loop = () => {
-    const t = clock.getElapsedTime() % total;
+    const t = at != null ? Math.min(at, total) : clock.getElapsedTime() % total;
     let i = frames.findIndex((f) => f.t > t); if (i === -1) i = frames.length; // tras el último: mantener
     const p = i === 0 ? frames[0].pose : i >= frames.length ? frames.at(-1).pose
       : mix(frames[i - 1].pose, frames[i].pose, ease((t - frames[i - 1].t) / (frames[i].t - frames[i - 1].t)));

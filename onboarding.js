@@ -15,7 +15,10 @@ const STEPS = [
   { id: "experience", type: "single", q: "¿Cómo está tu entrenamiento ahora?",
     options: [["cero", "Empiezo de cero", "Nunca he entrenado con pesas"], ["vuelta", "Vuelvo tras un parón", "Ya entrenaba, pero llevo meses sin ir"],
       ["regular", "Entreno ya", "Voy de forma regular"]] },
-  { id: "gym_days", type: "days", q: "¿Qué días puedes ir al gimnasio?", hint: "Marca los días que de verdad puedes cumplir. Mejor 2-3 fijos que 5 que se caen." },
+  { id: "training_style", type: "single", q: "¿Cómo vas a entrenar?",
+    options: [["rutina", "Por mi cuenta", "Con las rutinas de Sasoika en el gimnasio"], ["clases", "Clases dirigidas", "Fitlovas, body pump, pilates, spinning…"],
+      ["mixto", "Las dos cosas", "Algunas clases y algunos días por mi cuenta"]] },
+  { id: "gym_days", type: "days", q: "¿Qué días vas a entrenar?", hint: "Marca los días que de verdad puedes cumplir. Mejor 2-3 fijos que 5 que se caen." },
   { id: "sport", type: "sport", q: "¿Haces algún otro deporte fijo?", hint: "Por ejemplo fútbol, pádel o correr. Lo tendré en cuenta para no cargarte las piernas el día después." },
   { id: "session_min", type: "single", q: "¿Cuánto tiempo tienes por sesión?",
     options: [["30", "30 minutos"], ["45", "45 minutos"], ["60", "1 hora"], ["75", "Más de 1 hora"]] },
@@ -42,11 +45,12 @@ export function runOnboarding(root, prefill = {}) {
       if (s.type === "intro") {
         body = `<div class="ob-intro"><div class="ob-avatar">S</div>
           <h1>Hola, soy tu entrenador en Sasoika.</h1>
-          <p>Antes de empezar quiero conocerte, como haría cualquier preparador en la primera sesión. Son 12 preguntas rápidas y con ellas preparo tu plan: días de entreno, calorías y proteína.</p>
+          <p>Antes de empezar quiero conocerte, como haría cualquier preparador en la primera sesión. Son 13 preguntas rápidas y con ellas preparo tu plan: días de entreno, calorías y proteína.</p>
           <p class="muted small">Tardas unos 2 minutos. Podrás cambiarlo todo luego en Objetivos.</p></div>`;
       } else {
         body = `<p class="label">Pregunta ${i} de ${STEPS.length - 1}</p><h1 class="ob-q">${s.q}</h1>${s.hint ? `<p class="muted">${s.hint}</p>` : ""}<div class="ob-body">`;
         if (s.type === "text") body += `<input id="obIn" placeholder="${s.placeholder}" value="${a[s.id] ?? ""}" autocomplete="given-name">`;
+        if (s.id === "injuries") body += `<input id="obNote" placeholder="Detalles (opcional): p. ej. operada de cadera de pequeña, sin molestias" value="${a.health_notes ?? ""}">`;
         if (s.type === "single" || s.type === "multi") {
           const sel = s.type === "multi" ? new Set(a[s.id] || []) : new Set([String(a[s.id] ?? "")]);
           body += s.options.map(([v, t, sub]) => `<button class="ob-opt ${sel.has(v) ? "on" : ""}" data-v="${v}"><b>${t}</b>${sub ? `<small>${sub}</small>` : ""}</button>`).join("");
@@ -58,7 +62,7 @@ export function runOnboarding(root, prefill = {}) {
           if (s.type === "sport") body += `<input id="obIn" placeholder="Deporte (déjalo vacío si no haces)" value="${a.sport_name ?? ""}">`;
           body += `<div class="ob-days" data-key="${key}">${DAYS.map(([v, t]) => `<button class="${sel.has(v) ? "on" : ""}" data-v="${v}">${t}</button>`).join("")}</div>`;
         }
-        if (s.type === "event") body += `<input id="obIn" placeholder="Nombre (p. ej. Vietnam)" value="${a.event_name ?? ""}"><input id="obDate" type="date" value="${a.event_date ?? ""}">`;
+        if (s.type === "event") body += `<input id="obIn" placeholder="Nombre (p. ej. Vietnam)" value="${a.event_name ?? ""}"><input id="obDate" type="date" value="${a.event_date ?? ""}"><button class="ob-opt" id="obNoEvent"><b>No tengo fecha objetivo</b><small>Entreno por estar bien, sin fecha concreta</small></button>`;
         body += `</div>`;
       }
       root.innerHTML = `<div class="ob-bar"><div style="width:${pct}%"></div></div>${body}
@@ -78,6 +82,7 @@ export function runOnboarding(root, prefill = {}) {
         else { a.sport_name = root.querySelector("#obIn").value; a.sport_day = a.sport_day === v ? null : v; }
         render();
       });
+      const noEv = root.querySelector("#obNoEvent"); if (noEv) noEv.onclick = () => { root.querySelector("#obIn").value = ""; root.querySelector("#obDate").value = ""; next(); };
       const back = root.querySelector("#obBack"); if (back) back.onclick = () => { collect(); i--; render(); };
       const skip = root.querySelector("#obSkip"); if (skip) skip.onclick = () => resolve(null);
       root.querySelector("#obNext").onclick = next;
@@ -87,8 +92,9 @@ export function runOnboarding(root, prefill = {}) {
       const s = STEPS[i];
       if (s.type === "text") a[s.id] = root.querySelector("#obIn").value.trim();
       if (s.type === "numbers") root.querySelectorAll("[data-k]").forEach((x) => (a[x.dataset.k] = x.value === "" ? null : +x.value));
+      if (s.id === "injuries") a.health_notes = root.querySelector("#obNote").value.trim() || null;
       if (s.type === "sport") a.sport_name = root.querySelector("#obIn").value.trim() || null;
-      if (s.type === "event") { a.event_name = root.querySelector("#obIn").value.trim() || null; a.event_date = root.querySelector("#obDate").value || null; }
+      if (s.type === "event") { a.event_date = root.querySelector("#obDate").value || null; a.event_name = a.event_date ? root.querySelector("#obIn").value.trim() || "Mi objetivo" : null; }
     };
     const valid = () => {
       const s = STEPS[i];

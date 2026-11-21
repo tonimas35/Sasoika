@@ -31,7 +31,7 @@ export const ROUTINES = {
   ],
 };
 
-export const KIND_LABEL = { A: "Rutina A", B: "Rutina B", Futbol: "Fútbol", Cardio: "Cardio", Otro: "Otro" };
+export const KIND_LABEL = { A: "Rutina A", B: "Rutina B", Futbol: "Fútbol", Cardio: "Cardio", Clase: "Clase", Otro: "Otro" };
 
 // Músculos trabajados por ejercicio (peso relativo)
 export const MUSCLES = {
@@ -51,7 +51,8 @@ export const MUSCLES = {
   "Elevaciones laterales": { hombros: 1 },
   "Curl martillo": { biceps: 1 },
 };
-export const KIND_MUSCLES = { Futbol: { cuadriceps: 3, isquios: 2, gemelos: 3, gluteos: 2 }, Cardio: { cuadriceps: 1.5, gemelos: 1.5 } };
+export const KIND_MUSCLES = { Futbol: { cuadriceps: 3, isquios: 2, gemelos: 3, gluteos: 2 }, Cardio: { cuadriceps: 1.5, gemelos: 1.5 },
+  Clase: { cuadriceps: 2, gluteos: 2.5, core: 2.5, isquios: 1.5, hombros: 1.5, espalda: 1.5, pecho: 1, biceps: 1, triceps: 1, gemelos: 1 } };
 export const MUSCLE_LABEL = { pecho: "Pecho", espalda: "Espalda", hombros: "Hombros", biceps: "Bíceps", triceps: "Tríceps",
   core: "Core", gluteos: "Glúteos", cuadriceps: "Cuádriceps", isquios: "Isquios", gemelos: "Gemelos" };
 

@@ -1,5 +1,5 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-import { ROUTINES, KIND_LABEL, MUSCLES, KIND_MUSCLES, MUSCLE_LABEL, DETAILS } from "./routines.js?v=10";
+import { ROUTINES, KIND_LABEL, MUSCLES, KIND_MUSCLES, MUSCLE_LABEL, DETAILS } from "./routines.js?v=17";
 
 const SUPABASE_URL = "https://zxgmtfqgctbwnhykuzyd.supabase.co";
 const SUPABASE_KEY = "sb_publishable_WRU0kZGeWv5Yyr6nvidb8Q_fDujckjs"; // clave pública; los datos están protegidos por RLS
@@ -17,9 +17,11 @@ const fmt = (n, dec = 1) => (n == null ? "" : Number(n).toLocaleString("es-ES", 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const GOAL_DEFAULTS = { kcal: 2300, protein: 140, event_name: "Vietnam", event_date: "2027-01-16", start_date: "2026-11-21",
-  target_weight: null, target_waist: null, weekly_sessions: 3, sex: "hombre" };
+  target_weight: null, target_waist: null, weekly_sessions: 3, sex: "hombre", training_style: "rutina" };
 
 let user = null;
+const isSession = (k) => k === "A" || k === "B" || k === "Clase";
+const classes = () => goals.training_style === "clases";
 let goals = { ...GOAL_DEFAULTS };
 let currentKind = null;
 let extraExercises = [];
@@ -103,13 +105,13 @@ function sessionStorageGet(k) { try { return sessionStorage.getItem(k); } catch 
 async function startOnboarding() {
   SCREENS.forEach((x) => $(x).classList.add("hidden")); $("tabs").classList.add("hidden");
   const root = $("onboard"); root.classList.remove("hidden"); window.scrollTo(0, 0);
-  const { runOnboarding, buildPlan } = await import("./onboarding.js?v=1");
+  const { runOnboarding, buildPlan } = await import("./onboarding.js?v=2");
   const a = await runOnboarding(root, { ...goals, display_name: goals.display_name, weight: null });
   if (!a) { try { sessionStorage.setItem("obSkip", "1"); } catch {} root.classList.add("hidden"); return show("inicio"); }
   const plan = buildPlan(a);
   const g = { user_id: user.id, display_name: a.display_name, sex: a.sex, age: a.age, height_cm: a.height_cm, objective: a.objective,
     experience: a.experience, gym_days: a.gym_days, sport_name: a.sport_name || null, sport_day: a.sport_name ? a.sport_day ?? null : null,
-    session_min: +a.session_min, activity: a.activity, injuries: a.injuries, health_flag: (a.health || []).some((x) => x !== "ninguna"),
+    session_min: +a.session_min, activity: a.activity, training_style: a.training_style || "rutina", health_notes: a.health_notes || null, injuries: a.injuries, health_flag: (a.health || []).some((x) => x !== "ninguna"),
     kcal: plan.kcal, protein: plan.protein, weekly_sessions: plan.sessions || 3, event_name: a.event_name || null, event_date: a.event_date || null,
     start_date: goals.start_date || todayStr(), onboarded: true, updated_at: new Date().toISOString() };
   if (fail((await sb.from("goals").upsert(g)).error)) return;
@@ -119,6 +121,7 @@ async function startOnboarding() {
   const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const days = [...a.gym_days].sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map((d) => dayNames[d]);
   const objTxt = { perder_grasa: "perder grasa", recomposicion: "perder grasa y ganar músculo", ganar_musculo: "ganar músculo", salud: "ganar salud y forma" }[a.objective];
+  const styleTxt = { clases: "Irás a clases dirigidas: regístralas en Entrenos → Clase. Si un día vas por tu cuenta, tienes las rutinas A y B.", mixto: "Combinarás clases dirigidas con las rutinas A y B." }[a.training_style] || "";
   const ramp = a.experience === "regular" ? "Como ya entrenas, empezamos directamente con la fase de progresión." : "Las 2 primeras semanas son de readaptación: poco peso, técnica y sin llegar al fallo.";
   const inj = (a.injuries || []).filter((x) => x !== "ninguna");
   root.innerHTML = `<div class="ob-intro"><div class="ob-avatar">S</div>
@@ -126,8 +129,8 @@ async function startOnboarding() {
     <p>Tu objetivo es <b>${objTxt}</b>. Vamos a por ello con constancia, que es lo que de verdad funciona.</p></div>
     <div class="tiles"><div class="tile"><span class="label">Calorías / día</span><div class="big">${plan.kcal}</div><div class="label">gastas ≈ ${plan.tdee}</div></div>
       <div class="tile"><span class="label">Proteína / día</span><div class="big">${plan.protein}<small> g</small></div><div class="label">reparte en 3-4 comidas</div></div></div>
-    <div class="card"><span class="label">Entrenos</span><p style="margin:0">Gimnasio <b>${days.join(", ")}</b>, alternando las rutinas A y B (cuerpo completo).${a.sport_name ? ` El día después de ${esc(a.sport_name)} cargaremos menos las piernas.` : ""}</p>
-      <p class="muted small" style="margin:0">${ramp}</p></div>
+    <div class="card"><span class="label">Entrenos</span><p style="margin:0">${a.training_style === "clases" ? `Clases <b>${days.join(", ")}</b>.` : `Gimnasio <b>${days.join(", ")}</b>, alternando las rutinas A y B (cuerpo completo).`}${a.sport_name ? ` El día después de ${esc(a.sport_name)} cargaremos menos las piernas.` : ""}</p>
+      <p class="muted small" style="margin:0">${styleTxt} ${ramp}</p></div>
     ${inj.length ? `<div class="card"><span class="label">Molestias</span><p style="margin:0">Has marcado: ${inj.join(", ")}. Si un ejercicio te molesta, baja el peso o sáltalo, y apúntalo en las notas del ejercicio.</p></div>` : ""}
     ${g.health_flag ? `<div class="card warn"><span class="label">Antes de empezar</span><p style="margin:0">Por lo que has marcado en salud, consulta con tu médico antes de entrenar fuerte. Mientras, empieza con pesos muy suaves.</p></div>` : ""}
     <p class="muted small pad">Es una estimación de partida: la ajustaremos según cómo evolucione tu peso y tu cintura. Puedes cambiarlo en ⚙︎ Objetivos.</p>
@@ -183,10 +186,10 @@ async function loadInicio() {
 
   // Resumen
   const weekStart = mondayOf(todayStr());
-  const gym = workouts.filter((w) => w.day >= weekStart && (w.kind === "A" || w.kind === "B")).length;
+  const gym = workouts.filter((w) => w.day >= weekStart && isSession(w.kind)).length;
   const other = workouts.filter((w) => w.day >= weekStart && (w.kind === "Futbol" || w.kind === "Cardio")).length;
   $("sumSessions").innerHTML = `${gym}<small> / ${goals.weekly_sessions}</small>`;
-  $("sumSessionsSub").textContent = other ? `gimnasio · +${other} fútbol/cardio` : "gimnasio esta semana";
+  $("sumSessionsSub").textContent = (classes() ? "clases" : "gimnasio") + (other ? ` · +${other} fútbol/cardio` : " esta semana");
 
   const protByDay = {};
   (meals.data || []).forEach((m) => { const d = dayOf(m.eaten_at); protByDay[d] = (protByDay[d] || 0) + Number(m.protein || 0); });
@@ -210,6 +213,7 @@ async function loadInicio() {
 
   // Objetivos
   const ev = goals.event_date;
+  document.querySelector(".goal-event").classList.toggle("hidden", !ev);
   $("eventName").textContent = goals.event_name || "Objetivo";
   if (ev) {
     const left = daysBetween(todayStr(), ev);
@@ -351,9 +355,12 @@ async function loadHistory() {
 }
 
 // ---------- Entrenos ----------
-document.querySelectorAll("#kindSeg button").forEach((b) => b.addEventListener("click", () => {
-  currentKind = b.dataset.kind; extraExercises = []; loadEntrenos();
-}));
+function renderKindSeg() {
+  const kinds = classes() ? ["Clase", "A", "B", "Cardio"] : goals.training_style === "mixto" ? ["A", "B", "Clase", "Cardio"] : ["A", "B", "Futbol", "Cardio"];
+  if (goals.sport_name && !kinds.includes("Futbol") ) kinds[3] = "Futbol";
+  $("kindSeg").innerHTML = kinds.map((k) => `<button data-kind="${k}">${k === "Futbol" && goals.sport_name ? esc(goals.sport_name) : KIND_LABEL[k]}</button>`).join("");
+  document.querySelectorAll("#kindSeg button").forEach((b) => b.addEventListener("click", () => { currentKind = b.dataset.kind; extraExercises = []; loadEntrenos(); }));
+}
 
 async function nextRoutine() {
   const { data } = await sb.from("workouts").select("kind, day").in("kind", ["A", "B"]).order("day", { ascending: false }).order("id", { ascending: false }).limit(1);
@@ -370,9 +377,13 @@ async function todayWorkout(kind, create = false) {
 }
 
 async function loadEntrenos() {
+  renderKindSeg();
   const next = await nextRoutine();
-  if (!currentKind) currentKind = next.kind;
-  $("nextHint").textContent = next.today ? `Hoy ya has hecho la ${KIND_LABEL[next.kind]} ✓` : `Te toca la ${KIND_LABEL[next.kind]}`;
+  if (!currentKind) currentKind = classes() ? "Clase" : next.kind;
+  const dn = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  $("nextHint").textContent = classes()
+    ? `Tus clases: ${(goals.gym_days || []).slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map((d) => dn[d]).join(", ")}. Si un día vas por tu cuenta, usa la Rutina A o B.`
+    : next.today ? `Hoy ya has hecho la ${KIND_LABEL[next.kind]} ✓` : `Te toca la ${KIND_LABEL[next.kind]}`;
   document.querySelectorAll("#kindSeg button").forEach((b) => b.classList.toggle("active", b.dataset.kind === currentKind));
   const simple = !(currentKind in ROUTINES);
   $("simpleLog").classList.toggle("hidden", !simple);
@@ -381,7 +392,9 @@ async function loadEntrenos() {
 
   if (simple) {
     const w = await todayWorkout(currentKind);
-    $("simpleText").textContent = w ? `${KIND_LABEL[currentKind]} registrado hoy ✓` : `¿Has hecho ${KIND_LABEL[currentKind].toLowerCase()} hoy?`;
+    const lbl = currentKind === "Futbol" && goals.sport_name ? goals.sport_name : KIND_LABEL[currentKind];
+    $("simpleText").textContent = w ? `${lbl} registrado hoy ✓` : currentKind === "Clase" ? "¿Has ido a clase hoy?" : `¿Has hecho ${lbl.toLowerCase()} hoy?`;
+    $("simpleNotes").placeholder = currentKind === "Clase" ? "Qué clase (glúteo, HIIT, pilates…), duración, cómo te has sentido" : "Notas (opcional): 60 min, cómo te has sentido…";
     $("simpleNotes").value = w?.notes || "";
     $("simpleSave").textContent = w ? "Actualizar notas" : "Registrar";
     return;
@@ -514,9 +527,9 @@ async function renderRoutineView() {
     const dow = new Date(d + "T12:00:00").getDay();
     const k = done[d];
     let label = "", cls = "";
-    if (k?.length) { label = k.map((x) => (x === "Futbol" ? "⚽" : x === "Cardio" ? "🚴" : x)).join(""); cls = "done"; }
+    if (k?.length) { label = k.map((x) => (x === "Futbol" ? "⚽" : x === "Cardio" ? "🚴" : x === "Clase" ? "C" : x)).join(""); cls = "done"; }
     else if (d >= today && planOf(dow) && !(dow === 0 && !(goals.gym_days || []).includes(6) && (done[addDays(d, -1)] || []).some((x) => x === "A" || x === "B"))) {
-      if (planOf(dow) === "gym") { label = next; next = next === "A" ? "B" : "A"; }
+      if (planOf(dow) === "gym") { if (classes()) label = "C"; else { label = next; next = next === "A" ? "B" : "A"; } }
       else label = /f[uú]tbol/i.test(goals.sport_name || "fútbol") ? "⚽" : "🏃";
       cls = "plan";
     } else if (d < today && planOf(dow)) { label = "·"; cls = "miss"; }
@@ -531,7 +544,7 @@ async function renderRoutineView() {
     <div class="card">
       <span class="label">Esta semana</span><div class="pweek">${week(mon)}</div>
       <span class="label">Semana que viene</span><div class="pweek">${week(addDays(mon, 7))}</div>
-      <p class="muted small">Alterna A y B en tus días de gimnasio; si un día no puedes, la siguiente sesión sigue el orden.${goals.sport_name ? ` El día después de ${esc(goals.sport_name)}, menos carga de pierna.` : ""} ${ph.txt}</p>
+      <p class="muted small">${classes() ? "C = tus clases dirigidas. Si algún día vas por tu cuenta, haz la rutina A o B. " : ""}Alterna A y B en tus días de gimnasio; si un día no puedes, la siguiente sesión sigue el orden.${goals.sport_name ? ` El día después de ${esc(goals.sport_name)}, menos carga de pierna.` : ""} ${ph.txt}</p>
     </div>`;
 
   $("routineView").innerHTML = planHtml + Object.entries(ROUTINES).map(([k, list]) => `
@@ -684,7 +697,7 @@ async function loadProgreso() {
   if (exNames.length) drawEx(); else $("chartEx").innerHTML = `<p class="empty">Sin datos todavía</p>`;
 
   const weeks = {};
-  (workouts.data || []).filter((w) => w.kind === "A" || w.kind === "B").forEach((w) => { const k = mondayOf(w.day); weeks[k] = (weeks[k] || 0) + 1; });
+  (workouts.data || []).filter((w) => isSession(w.kind)).forEach((w) => { const k = mondayOf(w.day); weeks[k] = (weeks[k] || 0) + 1; });
   const out = [];
   for (let i = 9; i >= 0; i--) { const k = mondayOf(addDays(todayStr(), -7 * i)); out.push([k, weeks[k] || 0]); }
   barChart($("chartWeeks"), out, goals.weekly_sessions);
@@ -704,7 +717,7 @@ function activityMap(el, workouts, mealDays) {
   const end = addDays(mondayOf(endEv), 6);
   const lvl = {};
   Object.keys(mealDays).forEach((d) => (lvl[d] = 1));
-  workouts.forEach((w) => { const v = w.kind === "A" || w.kind === "B" ? 3 : 2; lvl[w.day] = Math.max(lvl[w.day] || 0, v); });
+  workouts.forEach((w) => { const v = isSession(w.kind) ? 3 : 2; lvl[w.day] = Math.max(lvl[w.day] || 0, v); });
   const weeks = Math.round(daysBetween(start, end) / 7) + 1;
   let html = `<div class="act-days"><span>L</span><span></span><span>X</span><span></span><span>V</span><span></span><span>D</span></div><div class="act-grid" style="grid-template-columns:repeat(${weeks},1fr)">`;
   for (let w = 0; w < weeks; w++) for (let i = 0; i < 7; i++) {
@@ -714,7 +727,7 @@ function activityMap(el, workouts, mealDays) {
     html += `<i class="${cls} ${d === today ? "today" : ""}" style="grid-column:${w + 1};grid-row:${i + 1}" title="${label}"></i>`;
   }
   el.innerHTML = html + "</div>";
-  const gym = workouts.filter((w) => (w.kind === "A" || w.kind === "B") && w.day >= start).length;
+  const gym = workouts.filter((w) => isSession(w.kind) && w.day >= start).length;
   const active = Object.keys(lvl).filter((d) => d >= start && lvl[d] >= 2).length;
   $("actSummary").textContent = `${gym} gimnasio · ${active} días activos`;
 }

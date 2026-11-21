@@ -14,6 +14,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
 </head>
 <body>
 <div id="app">
@@ -30,58 +36,39 @@
     </form>
   </section>
 
-  <!-- Hoy -->
-  <section id="hoy" class="screen hidden">
+  <!-- Inicio -->
+  <section id="inicio" class="screen hidden">
     <header class="top">
-      <div>
-        <p class="muted small" id="todayLabel"></p>
-        <h1>Hoy</h1>
-      </div>
+      <div><p class="label" id="todayLabel"></p><h1>Tu semana</h1></div>
       <button class="icon" id="settingsBtn" aria-label="Ajustes">⚙︎</button>
     </header>
 
+    <div class="card hero">
+      <div id="mannequin" class="mannequin"></div>
+      <div class="hero-legend">
+        <span class="label">Músculos trabajados · últimos 7 días</span>
+        <div id="muscleChips" class="chips"></div>
+        <p id="muscleMissing" class="muted small"></p>
+      </div>
+    </div>
+
     <div class="tiles">
-      <div class="tile">
-        <div class="tile-head"><span class="label">Proteína</span>
-          <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="protBar" cx="18" cy="18" r="15" class="ring-fg"/></svg>
-        </div>
-        <div class="big"><span id="protVal">0</span><small> g</small></div>
-        <div class="label">de <span id="protGoal">0</span> g</div>
-      </div>
-      <div class="tile">
-        <div class="tile-head"><span class="label">Calorías</span>
-          <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="kcalBar" cx="18" cy="18" r="15" class="ring-fg"/></svg>
-        </div>
-        <div class="big"><span id="kcalVal">0</span><small> kcal</small></div>
-        <div class="label">de <span id="kcalGoal">0</span> kcal</div>
-      </div>
+      <div class="tile"><span class="label">Entrenos</span><div class="big" id="sumSessions">0</div><div class="label" id="sumSessionsSub">esta semana</div></div>
+      <div class="tile"><span class="label">Proteína media</span><div class="big" id="sumProt">–</div><div class="label" id="sumProtSub">últimos 7 días</div></div>
+      <div class="tile"><span class="label">Peso</span><div class="big" id="sumWeight">–</div><div class="label" id="sumWeightSub">registra tu peso</div></div>
+      <div class="tile"><span class="label">Cintura</span><div class="big" id="sumWaist">–</div><div class="label" id="sumWaistSub">registra tu cintura</div></div>
     </div>
 
-    <button class="card next" id="nextBtn">
-      <span class="label">Toca entrenar</span>
-      <span class="next-title" id="nextTitle">Rutina A</span>
-      <span class="muted small" id="lastWorkout"></span>
-      <span class="next-cta">Empezar →</span>
-    </button>
-
-    <div class="section-head">
-      <h2>Comidas</h2>
-      <button class="pill" id="addMealBtn">＋ Comida</button>
+    <div class="section-head"><h2>Objetivos</h2><button class="link" id="editGoals">Editar</button></div>
+    <div class="card goal-event">
+      <div class="row-between"><span class="label" id="eventName">Vietnam</span><span class="label" id="eventDate"></span></div>
+      <div class="big xl" id="eventDays">–</div>
+      <div class="bar"><div class="fill" id="eventBar"></div></div>
+      <p class="muted small" id="eventSub"></p>
     </div>
-    <form id="mealForm" class="card hidden">
-      <input id="mealName" placeholder="¿Qué has comido?" required>
-      <div class="row">
-        <input id="mealKcal" type="number" inputmode="numeric" placeholder="kcal">
-        <input id="mealProt" type="number" inputmode="decimal" step="0.1" placeholder="Proteína g">
-      </div>
-      <div class="row">
-        <button type="button" class="ghost" id="mealCancel">Cancelar</button>
-        <button type="submit" class="primary">Guardar</button>
-      </div>
-    </form>
-    <ul id="mealList" class="list"></ul>
+    <div class="card goal-list" id="goalList"></div>
 
-    <div class="section-head"><h2>Cuerpo</h2></div>
+    <div class="section-head"><h2>Cuerpo hoy</h2></div>
     <form id="bodyForm" class="card row">
       <input id="bodyWeight" type="number" inputmode="decimal" step="0.1" placeholder="Peso kg">
       <input id="bodyWaist" type="number" inputmode="decimal" step="0.5" placeholder="Cintura cm">
@@ -89,24 +76,83 @@
     </form>
   </section>
 
-  <!-- Entreno -->
-  <section id="entreno" class="screen hidden">
-    <header class="top"><h1>Entreno</h1></header>
-    <div class="seg" id="kindSeg">
-      <button data-kind="A">Rutina A</button>
-      <button data-kind="B">Rutina B</button>
-      <button data-kind="Futbol">Fútbol</button>
-      <button data-kind="Cardio">Cardio</button>
+  <!-- Comidas -->
+  <section id="comidas" class="screen hidden">
+    <header class="top"><h1>Comidas</h1></header>
+    <div class="seg two" id="mealSeg">
+      <button data-sub="registrar" class="active">Registrar</button>
+      <button data-sub="historico">Histórico</button>
     </div>
-    <div id="exercises"></div>
-    <form id="extraForm" class="card row hidden-when-simple">
-      <input id="extraName" placeholder="Otro ejercicio">
-      <button type="submit" class="ghost narrow">＋</button>
-    </form>
-    <div id="simpleLog" class="card hidden">
-      <p class="muted" id="simpleText"></p>
-      <input id="simpleNotes" placeholder="Notas (opcional): 60 min, cómo te has sentido…">
-      <button class="primary" id="simpleSave">Registrar</button>
+
+    <div id="meal-registrar">
+      <div class="tiles">
+        <div class="tile">
+          <div class="tile-head"><span class="label">Proteína</span>
+            <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="protBar" cx="18" cy="18" r="15" class="ring-fg"/></svg></div>
+          <div class="big"><span id="protVal">0</span><small> g</small></div>
+          <div class="label">de <span id="protGoal">0</span> g</div>
+        </div>
+        <div class="tile">
+          <div class="tile-head"><span class="label">Calorías</span>
+            <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="ring-bg"/><circle id="kcalBar" cx="18" cy="18" r="15" class="ring-fg"/></svg></div>
+          <div class="big"><span id="kcalVal">0</span><small> kcal</small></div>
+          <div class="label">de <span id="kcalGoal">0</span> kcal</div>
+        </div>
+      </div>
+
+      <form id="mealForm" class="card">
+        <input id="mealName" placeholder="¿Qué has comido?" required>
+        <div class="row">
+          <input id="mealKcal" type="number" inputmode="numeric" placeholder="kcal">
+          <input id="mealProt" type="number" inputmode="decimal" step="0.1" placeholder="Proteína g">
+          <button type="submit" class="primary narrow">＋</button>
+        </div>
+      </form>
+
+      <div id="frequentWrap" class="hidden">
+        <p class="label pad">Frecuentes · toca para añadir</p>
+        <div id="frequent" class="chips scroll"></div>
+      </div>
+
+      <div class="section-head"><h2>Hoy</h2></div>
+      <ul id="mealList" class="list"></ul>
+    </div>
+
+    <div id="meal-historico" class="hidden">
+      <div id="history"></div>
+    </div>
+  </section>
+
+  <!-- Entrenos -->
+  <section id="entrenos" class="screen hidden">
+    <header class="top"><h1>Entrenos</h1></header>
+    <div class="seg two" id="trainSeg">
+      <button data-sub="registrar" class="active">Registrar</button>
+      <button data-sub="rutina">Rutina</button>
+    </div>
+
+    <div id="train-registrar">
+      <div class="seg" id="kindSeg">
+        <button data-kind="A">Rutina A</button>
+        <button data-kind="B">Rutina B</button>
+        <button data-kind="Futbol">Fútbol</button>
+        <button data-kind="Cardio">Cardio</button>
+      </div>
+      <p class="muted small pad" id="nextHint"></p>
+      <div id="exercises"></div>
+      <form id="extraForm" class="card row">
+        <input id="extraName" placeholder="Otro ejercicio">
+        <button type="submit" class="ghost narrow">＋</button>
+      </form>
+      <div id="simpleLog" class="card hidden">
+        <p class="muted" id="simpleText"></p>
+        <input id="simpleNotes" placeholder="Notas (opcional): 60 min, cómo te has sentido…">
+        <button class="primary" id="simpleSave">Registrar</button>
+      </div>
+    </div>
+
+    <div id="train-rutina" class="hidden">
+      <div id="routineView"></div>
     </div>
   </section>
 
@@ -121,22 +167,34 @@
       <div id="chartEx" class="chart"></div>
     </div>
     <div class="card"><h3>Entrenos por semana</h3><div id="chartWeeks" class="chart"></div></div>
+    <div class="card"><h3>Proteína diaria</h3><div id="chartProt" class="chart"></div></div>
   </section>
 
   <!-- Ajustes -->
   <section id="ajustes" class="screen hidden">
-    <header class="top"><h1>Ajustes</h1><button class="icon" id="closeSettings">✕</button></header>
+    <header class="top"><h1>Objetivos</h1><button class="icon" id="closeSettings">✕</button></header>
     <form id="goalsForm" class="card">
-      <label>Objetivo de calorías al día<input id="goalKcal" type="number" inputmode="numeric"></label>
-      <label>Objetivo de proteína al día (g)<input id="goalProt" type="number" inputmode="numeric"></label>
+      <label>Evento<input id="gEventName" placeholder="Vietnam"></label>
+      <label>Fecha del evento<input id="gEventDate" type="date"></label>
+      <label>Inicio del plan<input id="gStartDate" type="date"></label>
+      <div class="row">
+        <label>Peso objetivo (kg)<input id="gWeight" type="number" inputmode="decimal" step="0.1"></label>
+        <label>Cintura objetivo (cm)<input id="gWaist" type="number" inputmode="decimal" step="0.5"></label>
+      </div>
+      <div class="row">
+        <label>Calorías / día<input id="goalKcal" type="number" inputmode="numeric"></label>
+        <label>Proteína / día (g)<input id="goalProt" type="number" inputmode="numeric"></label>
+      </div>
+      <label>Entrenos de gimnasio por semana<input id="gSessions" type="number" inputmode="numeric" min="1" max="7"></label>
       <button class="primary" type="submit">Guardar</button>
     </form>
     <button class="ghost wide" id="logoutBtn">Cerrar sesión</button>
   </section>
 
   <nav id="tabs" class="hidden">
-    <button data-tab="hoy" class="active">Hoy</button>
-    <button data-tab="entreno">Entreno</button>
+    <button data-tab="inicio" class="active">Inicio</button>
+    <button data-tab="comidas">Comidas</button>
+    <button data-tab="entrenos">Entrenos</button>
     <button data-tab="progreso">Progreso</button>
   </nav>
   <div id="toast" class="toast"></div>

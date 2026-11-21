@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Forma</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Login -->
+  <section id="auth" class="screen hidden">
+    <h1 class="brand">Forma</h1>
+    <p class="muted">Comidas y entrenos, sin complicaciones.</p>
+    <form id="authForm" class="card">
+      <input id="email" type="email" placeholder="Email" autocomplete="email" required>
+      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" minlength="6" required>
+      <button type="submit" class="primary">Entrar</button>
+      <button type="button" id="signupBtn" class="ghost">Crear cuenta</button>
+      <p id="authMsg" class="muted small"></p>
+    </form>
+  </section>
+
+  <!-- Hoy -->
+  <section id="hoy" class="screen hidden">
+    <header class="top">
+      <div>
+        <p class="muted small" id="todayLabel"></p>
+        <h1>Hoy</h1>
+      </div>
+      <button class="icon" id="settingsBtn" aria-label="Ajustes">⚙︎</button>
+    </header>
+
+    <div class="card">
+      <div class="meter">
+        <div class="meter-head"><span>Proteína</span><span><b id="protVal">0</b> / <span id="protGoal">0</span> g</span></div>
+        <div class="bar"><div id="protBar" class="fill prot"></div></div>
+      </div>
+      <div class="meter">
+        <div class="meter-head"><span>Calorías</span><span><b id="kcalVal">0</b> / <span id="kcalGoal">0</span> kcal</span></div>
+        <div class="bar"><div id="kcalBar" class="fill kcal"></div></div>
+      </div>
+    </div>
+
+    <button class="card next" id="nextBtn">
+      <span class="muted small">Toca entrenar</span>
+      <span class="next-title" id="nextTitle">Rutina A</span>
+      <span class="muted small" id="lastWorkout"></span>
+    </button>
+
+    <div class="section-head">
+      <h2>Comidas</h2>
+      <button class="pill" id="addMealBtn">＋ Comida</button>
+    </div>
+    <form id="mealForm" class="card hidden">
+      <input id="mealName" placeholder="¿Qué has comido?" required>
+      <div class="row">
+        <input id="mealKcal" type="number" inputmode="numeric" placeholder="kcal">
+        <input id="mealProt" type="number" inputmode="decimal" step="0.1" placeholder="Proteína g">
+      </div>
+      <div class="row">
+        <button type="button" class="ghost" id="mealCancel">Cancelar</button>
+        <button type="submit" class="primary">Guardar</button>
+      </div>
+    </form>
+    <ul id="mealList" class="list"></ul>
+
+    <div class="section-head"><h2>Cuerpo</h2></div>
+    <form id="bodyForm" class="card row">
+      <input id="bodyWeight" type="number" inputmode="decimal" step="0.1" placeholder="Peso kg">
+      <input id="bodyWaist" type="number" inputmode="decimal" step="0.5" placeholder="Cintura cm">
+      <button type="submit" class="primary narrow">✓</button>
+    </form>
+  </section>
+
+  <!-- Entreno -->
+  <section id="entreno" class="screen hidden">
+    <header class="top"><h1>Entreno</h1></header>
+    <div class="seg" id="kindSeg">
+      <button data-kind="A">Rutina A</button>
+      <button data-kind="B">Rutina B</button>
+      <button data-kind="Futbol">Fútbol</button>
+      <button data-kind="Cardio">Cardio</button>
+    </div>
+    <div id="exercises"></div>
+    <form id="extraForm" class="card row hidden-when-simple">
+      <input id="extraName" placeholder="Otro ejercicio">
+      <button type="submit" class="ghost narrow">＋</button>
+    </form>
+    <div id="simpleLog" class="card hidden">
+      <p class="muted" id="simpleText"></p>
+      <input id="simpleNotes" placeholder="Notas (opcional): 60 min, cómo te has sentido…">
+      <button class="primary" id="simpleSave">Registrar</button>
+    </div>
+  </section>
+
+  <!-- Progreso -->
+  <section id="progreso" class="screen hidden">
+    <header class="top"><h1>Progreso</h1></header>
+    <div class="card"><h3>Peso corporal</h3><div id="chartWeight" class="chart"></div></div>
+    <div class="card"><h3>Cintura</h3><div id="chartWaist" class="chart"></div></div>
+    <div class="card">
+      <h3>Ejercicio</h3>
+      <select id="exSelect"></select>
+      <div id="chartEx" class="chart"></div>
+    </div>
+    <div class="card"><h3>Entrenos por semana</h3><div id="chartWeeks" class="chart"></div></div>
+  </section>
+
+  <!-- Ajustes -->
+  <section id="ajustes" class="screen hidden">
+    <header class="top"><h1>Ajustes</h1><button class="icon" id="closeSettings">✕</button></header>
+    <form id="goalsForm" class="card">
+      <label>Objetivo de calorías al día<input id="goalKcal" type="number" inputmode="numeric"></label>
+      <label>Objetivo de proteína al día (g)<input id="goalProt" type="number" inputmode="numeric"></label>
+      <button class="primary" type="submit">Guardar</button>
+    </form>
+    <button class="ghost wide" id="logoutBtn">Cerrar sesión</button>
+  </section>
+
+  <nav id="tabs" class="hidden">
+    <button data-tab="hoy" class="active">Hoy</button>
+    <button data-tab="entreno">Entreno</button>
+    <button data-tab="progreso">Progreso</button>
+  </nav>
+  <div id="toast" class="toast"></div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

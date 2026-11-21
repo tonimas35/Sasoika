@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=15">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -193,8 +193,11 @@
       <label>Entrenos de gimnasio por semana<input id="gSessions" type="number" inputmode="numeric" min="1" max="7"></label>
       <button class="primary" type="submit">Guardar</button>
     </form>
+    <button class="ghost wide" id="redoOnboard" style="margin-bottom:10px">Repetir evaluación inicial</button>
     <button class="ghost wide" id="logoutBtn">Cerrar sesión</button>
   </section>
+
+  <section id="onboard" class="screen hidden"></section>
 
   <!-- Ficha de ejercicio -->
   <div id="sheet" class="sheet hidden" role="dialog" aria-modal="true">
@@ -225,6 +228,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=14"></script>
+<script type="module" src="app.js?v=15"></script>
 </body>
 </html>

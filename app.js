@@ -32,7 +32,7 @@ function toast(msg) {
 function fail(error) { if (error) { console.error(error); toast("Error: " + (error.message || error)); return true; } return false; }
 
 // ---------- Navegación ----------
-const SCREENS = ["auth", "inicio", "comidas", "entrenos", "progreso", "ajustes"];
+const SCREENS = ["auth", "inicio", "comidas", "entrenos", "progreso", "ajustes", "onboard"];
 function show(name) {
   SCREENS.forEach((s) => $(s).classList.toggle("hidden", s !== name));
   $("tabs").classList.toggle("hidden", name === "auth" || name === "ajustes");
@@ -75,6 +75,7 @@ $("signupBtn").addEventListener("click", async () => {
   $("authMsg").textContent = data.session ? "" : "Cuenta creada. Confirma el email que te ha llegado y luego pulsa Entrar.";
 });
 $("logoutBtn").addEventListener("click", () => sb.auth.signOut());
+$("redoOnboard").addEventListener("click", () => startOnboarding());
 $("settingsBtn").addEventListener("click", () => show("ajustes"));
 $("editGoals").addEventListener("click", () => show("ajustes"));
 $("closeSettings").addEventListener("click", () => show("inicio"));
@@ -89,8 +90,49 @@ sb.auth.onAuthStateChange((_ev, session) => {
 async function init() {
   const { data } = await sb.from("goals").select("*").maybeSingle();
   if (data) goals = { ...GOAL_DEFAULTS, ...Object.fromEntries(Object.entries(data).filter(([, v]) => v != null)) };
-  else await sb.from("goals").insert({ kcal: goals.kcal, protein: goals.protein });
+  else {
+    await sb.from("goals").insert({ kcal: goals.kcal, protein: goals.protein, event_name: null, event_date: null, start_date: todayStr() });
+    goals = { ...GOAL_DEFAULTS, event_name: null, event_date: null, start_date: todayStr() };
+  }
+  if (!goals.onboarded && !sessionStorageGet("obSkip")) return startOnboarding();
   show("inicio");
+}
+function sessionStorageGet(k) { try { return sessionStorage.getItem(k); } catch { return null; } }
+
+// ---------- Bienvenida / evaluación inicial ----------
+async function startOnboarding() {
+  SCREENS.forEach((x) => $(x).classList.add("hidden")); $("tabs").classList.add("hidden");
+  const root = $("onboard"); root.classList.remove("hidden"); window.scrollTo(0, 0);
+  const { runOnboarding, buildPlan } = await import("./onboarding.js?v=1");
+  const a = await runOnboarding(root, { ...goals, display_name: goals.display_name, weight: null });
+  if (!a) { try { sessionStorage.setItem("obSkip", "1"); } catch {} root.classList.add("hidden"); return show("inicio"); }
+  const plan = buildPlan(a);
+  const g = { user_id: user.id, display_name: a.display_name, sex: a.sex, age: a.age, height_cm: a.height_cm, objective: a.objective,
+    experience: a.experience, gym_days: a.gym_days, sport_name: a.sport_name || null, sport_day: a.sport_name ? a.sport_day ?? null : null,
+    session_min: +a.session_min, activity: a.activity, injuries: a.injuries, health_flag: (a.health || []).some((x) => x !== "ninguna"),
+    kcal: plan.kcal, protein: plan.protein, weekly_sessions: plan.sessions || 3, event_name: a.event_name || null, event_date: a.event_date || null,
+    start_date: goals.start_date || todayStr(), onboarded: true, updated_at: new Date().toISOString() };
+  if (fail((await sb.from("goals").upsert(g)).error)) return;
+  await sb.from("body").upsert({ user_id: user.id, day: todayStr(), weight_kg: a.weight, waist_cm: a.waist ?? null }, { onConflict: "user_id,day" });
+  goals = { ...GOAL_DEFAULTS, ...Object.fromEntries(Object.entries(g).filter(([, v]) => v != null)) };
+
+  const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const days = [...a.gym_days].sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map((d) => dayNames[d]);
+  const objTxt = { perder_grasa: "perder grasa", recomposicion: "perder grasa y ganar músculo", ganar_musculo: "ganar músculo", salud: "ganar salud y forma" }[a.objective];
+  const ramp = a.experience === "regular" ? "Como ya entrenas, empezamos directamente con la fase de progresión." : "Las 2 primeras semanas son de readaptación: poco peso, técnica y sin llegar al fallo.";
+  const inj = (a.injuries || []).filter((x) => x !== "ninguna");
+  root.innerHTML = `<div class="ob-intro"><div class="ob-avatar">S</div>
+    <h1>Listo, ${esc(a.display_name)}. Este es tu plan.</h1>
+    <p>Tu objetivo es <b>${objTxt}</b>. Vamos a por ello con constancia, que es lo que de verdad funciona.</p></div>
+    <div class="tiles"><div class="tile"><span class="label">Calorías / día</span><div class="big">${plan.kcal}</div><div class="label">gastas ≈ ${plan.tdee}</div></div>
+      <div class="tile"><span class="label">Proteína / día</span><div class="big">${plan.protein}<small> g</small></div><div class="label">reparte en 3-4 comidas</div></div></div>
+    <div class="card"><span class="label">Entrenos</span><p style="margin:0">Gimnasio <b>${days.join(", ")}</b>, alternando las rutinas A y B (cuerpo completo).${a.sport_name ? ` El día después de ${esc(a.sport_name)} cargaremos menos las piernas.` : ""}</p>
+      <p class="muted small" style="margin:0">${ramp}</p></div>
+    ${inj.length ? `<div class="card"><span class="label">Molestias</span><p style="margin:0">Has marcado: ${inj.join(", ")}. Si un ejercicio te molesta, baja el peso o sáltalo, y apúntalo en las notas del ejercicio.</p></div>` : ""}
+    ${g.health_flag ? `<div class="card warn"><span class="label">Antes de empezar</span><p style="margin:0">Por lo que has marcado en salud, consulta con tu médico antes de entrenar fuerte. Mientras, empieza con pesos muy suaves.</p></div>` : ""}
+    <p class="muted small pad">Es una estimación de partida: la ajustaremos según cómo evolucione tu peso y tu cintura. Puedes cambiarlo en ⚙︎ Objetivos.</p>
+    <div class="ob-nav"><button class="primary wide" id="obGo">Empezar</button></div>`;
+  $("obGo").onclick = () => { root.classList.add("hidden"); show("inicio"); };
 }
 
 // ---------- Objetivos (ajustes) ----------
@@ -451,7 +493,8 @@ $("simpleSave").onclick = async () => {
 };
 
 // Plan semanal: lunes, viernes y domingo gimnasio (alternando A/B); jueves fútbol
-const PLAN = { 1: "gym", 4: "Futbol", 5: "gym", 0: "gym" }; // getDay(): 0 = domingo
+// Plan según la evaluación: días de gimnasio y deporte fijo (getDay(): 0 = domingo)
+const planOf = (dow) => (goals.gym_days || [1, 5, 0]).includes(dow) ? "gym" : goals.sport_day === dow ? "Futbol" : null;
 const DOW = ["L", "M", "X", "J", "V", "S", "D"];
 function phaseOf(week) {
   if (week <= 2) return { name: "Readaptación", txt: "2-3 series, lejos del fallo (3-4 reps en reserva)." };
@@ -472,11 +515,11 @@ async function renderRoutineView() {
     const k = done[d];
     let label = "", cls = "";
     if (k?.length) { label = k.map((x) => (x === "Futbol" ? "⚽" : x === "Cardio" ? "🚴" : x)).join(""); cls = "done"; }
-    else if (d >= today && PLAN[dow] && !(dow === 0 && (done[addDays(d, -1)] || []).some((x) => x === "A" || x === "B"))) {
-      if (PLAN[dow] === "gym") { label = next; next = next === "A" ? "B" : "A"; }
-      else label = "⚽";
+    else if (d >= today && planOf(dow) && !(dow === 0 && !(goals.gym_days || []).includes(6) && (done[addDays(d, -1)] || []).some((x) => x === "A" || x === "B"))) {
+      if (planOf(dow) === "gym") { label = next; next = next === "A" ? "B" : "A"; }
+      else label = /f[uú]tbol/i.test(goals.sport_name || "fútbol") ? "⚽" : "🏃";
       cls = "plan";
-    } else if (d < today && PLAN[dow]) { label = "·"; cls = "miss"; }
+    } else if (d < today && planOf(dow)) { label = "·"; cls = "miss"; }
     return `<div class="pday ${cls} ${d === today ? "today" : ""}"><span>${DOW[(dow + 6) % 7]}</span><b>${label || "&nbsp;"}</b></div>`;
   };
   const week = (start) => Array.from({ length: 7 }, (_, i) => cell(addDays(start, i))).join("");
@@ -488,7 +531,7 @@ async function renderRoutineView() {
     <div class="card">
       <span class="label">Esta semana</span><div class="pweek">${week(mon)}</div>
       <span class="label">Semana que viene</span><div class="pweek">${week(addDays(mon, 7))}</div>
-      <p class="muted small">Gimnasio lunes, viernes y fin de semana (sábado o domingo) alternando A y B (si un día no puedes, la siguiente sesión sigue el orden). Jueves fútbol: el viernes, menos carga de pierna. ${ph.txt}</p>
+      <p class="muted small">Alterna A y B en tus días de gimnasio; si un día no puedes, la siguiente sesión sigue el orden.${goals.sport_name ? ` El día después de ${esc(goals.sport_name)}, menos carga de pierna.` : ""} ${ph.txt}</p>
     </div>`;
 
   $("routineView").innerHTML = planHtml + Object.entries(ROUTINES).map(([k, list]) => `

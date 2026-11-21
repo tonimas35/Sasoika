@@ -207,3 +207,29 @@ textarea:focus { outline: none; border-color: var(--ink); background: #fff; }
 .rest small { font-weight: 500; font-size: 12px; opacity: .7; margin-left: 8px; }
 .rest.done { background: var(--ok); }
 .sheet-seg { margin-bottom: 10px; }
+
+/* Evaluación inicial */
+#onboard { padding-top: 6px; }
+.ob-bar { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 6px 0 26px; }
+.ob-bar div { height: 100%; background: var(--ink); transition: width .3s; }
+.ob-intro { display: flex; flex-direction: column; gap: 10px; margin: 6vh 0 22px; }
+.ob-intro h1 { font-size: 28px; line-height: 1.15; }
+.ob-intro p { margin: 0; font-size: 16px; line-height: 1.5; }
+.ob-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 22px; }
+.ob-q { font-size: 26px; line-height: 1.15; margin: 6px 0 8px; }
+.ob-body { display: flex; flex-direction: column; gap: 10px; margin: 18px 0 24px; }
+.ob-opt { text-align: left; background: var(--card); box-shadow: var(--shadow); border-radius: 18px; padding: 15px 16px; display: flex; flex-direction: column; gap: 3px; border: 2px solid transparent; }
+.ob-opt b { font-weight: 600; }
+.ob-opt small { color: var(--muted); font-size: 13px; }
+.ob-opt.on { border-color: var(--ink); }
+.ob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ob-unit { position: relative; }
+.ob-unit span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; }
+.ob-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.ob-days button { background: var(--card); box-shadow: var(--shadow); padding: 14px 0; border-radius: 14px; font-weight: 600; }
+.ob-days button.on { background: var(--ink); color: #fff; }
+.ob-nav { display: flex; gap: 10px; position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); }
+.ob-nav button { flex: 1; }
+.ob-nav.shake { animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.card.warn { box-shadow: inset 0 0 0 1.5px var(--warn), var(--shadow); }

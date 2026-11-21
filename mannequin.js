@@ -15,7 +15,7 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 const MODEL_URL = new URL("./assets/body.glb?v=3", import.meta.url).href;
 const SKIN = new THREE.Color("#f2f2ef");
 const MUSCLE_0 = new THREE.Color("#ecece8");
-const MUSCLE_1 = new THREE.Color("#141414");
+const MUSCLE_1 = new THREE.Color("#2b5be0");
 const HEIGHT = 1.78;
 const GROUPS = ["pecho", "espalda", "hombros", "biceps", "triceps", "core", "gluteos", "cuadriceps", "isquios", "gemelos"];
 

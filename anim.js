@@ -9,7 +9,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const D = THREE.MathUtils.degToRad;
-const SKIN = "#f1f1ee", DARK = "#1c1c1c", EQUIP = "#2b2b2b", EQUIP_SOFT = "#d9d9d4";
+const SKIN = "#f4f2f6", DARK = "#3d7bff", EQUIP = "#2b2b2b", EQUIP_SOFT = "#d9d9d4";
 
 let renderer, scene, camera, controls, raf, envT, resizeObs, clock;
 const disposables = [];

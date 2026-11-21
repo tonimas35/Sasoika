@@ -815,8 +815,8 @@ function lineChart(el, pts, unit, target) {
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
     ${target ? `<line x1="${P}" x2="${W - P}" y1="${y(target)}" y2="${y(target)}" stroke="#c9c9c4" stroke-dasharray="4 4"/>
       <text x="${W - P}" y="${y(target) - 5}" fill="var(--muted)" font-size="10" text-anchor="end">objetivo ${fmt(target)}</text>` : ""}
-    <path d="${path}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="#fff" stroke="var(--ink)" stroke-width="2"/>`).join("")}
+    <path d="${path}" fill="none" stroke="#3d7bff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map((p, i) => `<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="#fff" stroke="#3d7bff" stroke-width="2"/>`).join("")}
     <text x="${P}" y="${H - 6}" fill="var(--muted)" font-size="11">${d(pts[0][0])}</text>
     <text x="${W - P}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="end">${d(last[0])} · ${fmt(last[1])} ${unit}</text>
   </svg>`;
@@ -829,7 +829,7 @@ function barChart(el, data, goal) {
   el.innerHTML = `<svg viewBox="0 0 ${W} ${H}">
     <line x1="${P}" x2="${W - P}" y1="${gy}" y2="${gy}" stroke="#c9c9c4" stroke-dasharray="4 4"/>
     ${data.map((d, i) => { const h = Math.max(d[1] ? 4 : 0, (d[1] / max) * (H - 2 * P)); return `
-      <rect x="${P + i * bw + 4}" y="${H - P - h}" width="${bw - 8}" height="${h}" rx="5" fill="${i === data.length - 1 ? "var(--ink)" : d[1] >= goal ? "#bdbdb8" : "#e2e2de"}"/>
+      <rect x="${P + i * bw + 4}" y="${H - P - h}" width="${bw - 8}" height="${h}" rx="5" fill="${i === data.length - 1 ? "#3d7bff" : d[1] >= goal ? "#7fa6ff" : "rgba(255,255,255,.7)"}"/>
       ${d[1] ? `<text x="${P + i * bw + bw / 2}" y="${H - P - h - 5}" fill="var(--muted)" font-size="11" text-anchor="middle">${d[1]}</text>` : ""}`; }).join("")}
     <text x="${W - P}" y="${H - 4}" fill="var(--muted)" font-size="11" text-anchor="end">esta semana</text>
   </svg>`;

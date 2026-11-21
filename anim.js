@@ -17,7 +17,7 @@ let POSES = null;
 
 async function poses() {
   if (globalThis.__SASOIKA_POSES) return globalThis.__SASOIKA_POSES;
-  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=3", import.meta.url)).then((r) => r.json());
+  if (!POSES) POSES = await fetch(new URL("./assets/poses.json?v=4", import.meta.url)).then((r) => r.json());
   return POSES;
 }
 
@@ -55,9 +55,10 @@ function buildFigure(sex, hl) {
   for (const [s, side] of [[1, "L"], [-1, "R"]]) {
     const shoulder = J["shoulder" + side] = grp(J.chest, [s * sh, 0.18, 0]);
     mesh(sph(0.06), m("hombros"), shoulder, [0, 0, 0]);
+    const hum = J["humerus" + side] = grp(shoulder);
     const armM = hl.has("biceps") ? m("biceps") : m("triceps");
-    mesh(caps(0.045, 0.2), armM, shoulder, [0, -0.145, 0]);
-    const elbow = J["elbow" + side] = grp(shoulder, [0, -0.29, 0]);
+    mesh(caps(0.045, 0.2), armM, hum, [0, -0.145, 0]);
+    const elbow = J["elbow" + side] = grp(hum, [0, -0.29, 0]);
     mesh(caps(0.038, 0.19), skin, elbow, [0, -0.13, 0]);
     const wrist = J["wrist" + side] = grp(elbow, [0, -0.26, 0]);
     mesh(sph(0.04), skin, wrist, [0, -0.045, 0], [0.75, 1.2, 0.5]);
@@ -93,6 +94,7 @@ function applyPose(J, p, sex) {
   J.neck.rotation.x = D(typeof p.neck === "object" ? p.neck.flex ?? 0 : p.neck ?? 0);
   for (const [s, side] of [[1, "L"], [-1, "R"]]) {
     J["shoulder" + side].rotation.set(-D(val(p, "shoulder", side, "flex")), 0, s * D(val(p, "shoulder", side, "abd")), "ZXY");
+    J["humerus" + side].rotation.y = s * D(val(p, "shoulder", side, "rot"));
     J["elbow" + side].rotation.x = -D(val(p, "elbow", side));
     J["wrist" + side].rotation.y = s * D(val(p, "wrist", side));
     J["hip" + side].rotation.set(-D(val(p, "hip", side, "flex")), 0, s * D(val(p, "hip", side, "abd")), "ZXY");
@@ -150,9 +152,10 @@ function buildEquipment(key, J) {
     }
     case "press_pecho": case "curl_biceps": case "press_militar": {
       const seatY = pel.y - 0.11;
-      if (key === "press_pecho") box(0.3, 0.06, 1.2, [0, seatY, pel.z + 0.32]);
+      const nz = wp(J.neck).z, bz = (pel.z + nz) / 2 + Math.sign(pel.z - nz) * 0.15;
+      if (key === "press_pecho") box(0.3, 0.06, 1.2, [0, seatY, bz]);
       else { box(0.35, 0.06, 0.4, [0, seatY, pel.z + 0.06]); if (key === "press_militar") box(0.35, 0.65, 0.06, [0, seatY + 0.36, pel.z - 0.16], -0.12); }
-      for (const dz of key === "press_pecho" ? [-0.15, 0.75] : [0.06]) bar(V(0, 0, pel.z + dz), V(0, seatY, pel.z + dz), 0.03);
+      for (const z of key === "press_pecho" ? [bz - 0.45, bz + 0.45] : [pel.z + 0.06]) bar(V(0, 0, z), V(0, seatY, z), 0.03);
       dumbbell(J.handL); dumbbell(J.handR);
       break;
     }
@@ -166,12 +169,17 @@ function buildEquipment(key, J) {
       break;
     }
     case "prensa": {
-      box(0.4, 0.07, 0.4, [0, pel.y - 0.1, pel.z - 0.02]);
-      box(0.4, 0.7, 0.07, [0, pel.y + 0.25, pel.z - 0.25], -0.35);
-      // plataforma que sigue a los pies
-      const plate = mesh(new THREE.BoxGeometry(0.5, 0.5, 0.04), mat(EQUIP, 0.5), J.footL, [-0.1, 0.12, 0.08]);
-      plate.rotation.x = Math.PI / 2;
-      break;
+      // asiento y respaldo se mueven con la pelvis; la plataforma sigue a las plantas de los pies
+      const soft = mat(EQUIP_SOFT, 0.7);
+      mesh(new THREE.BoxGeometry(0.42, 0.06, 0.42), soft, J.root, [0, -0.13, 0.12]);
+      mesh(new THREE.BoxGeometry(0.42, 0.75, 0.06), soft, J.root, [0, 0.32, -0.15]);
+      const plate = mesh(new THREE.BoxGeometry(0.55, 0.45, 0.035), mat(EQUIP, 0.45), scene);
+      return () => {
+        const f = wp(J.footL).add(wp(J.footR)).multiplyScalar(0.5), hp = wp(J.hipL).add(wp(J.hipR)).multiplyScalar(0.5);
+        const dir = f.clone().sub(hp).normalize();
+        plate.position.copy(f).addScaledVector(dir, 0.03);
+        plate.quaternion.setFromUnitVectors(V(0, 0, 1), dir);
+      };
     }
     case "remo_maquina": {
       box(0.35, 0.06, 0.35, [0, pel.y - 0.1, pel.z]);

@@ -1,4 +1,6 @@
-# Forma
+# Sasoi
+
+«Sasoian egon»: estar en forma, en euskera.
 
 App web mínima para registrar comidas y entrenos (objetivo: Vietnam, enero 2027).
 

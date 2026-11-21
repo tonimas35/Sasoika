@@ -470,7 +470,7 @@ async function renderRoutineView() {
     const k = done[d];
     let label = "", cls = "";
     if (k?.length) { label = k.map((x) => (x === "Futbol" ? "⚽" : x === "Cardio" ? "🚴" : x)).join(""); cls = "done"; }
-    else if (d >= today && PLAN[dow]) {
+    else if (d >= today && PLAN[dow] && !(dow === 0 && (done[addDays(d, -1)] || []).some((x) => x === "A" || x === "B"))) {
       if (PLAN[dow] === "gym") { label = next; next = next === "A" ? "B" : "A"; }
       else label = "⚽";
       cls = "plan";
@@ -486,7 +486,7 @@ async function renderRoutineView() {
     <div class="card">
       <span class="label">Esta semana</span><div class="pweek">${week(mon)}</div>
       <span class="label">Semana que viene</span><div class="pweek">${week(addDays(mon, 7))}</div>
-      <p class="muted small">Gimnasio lunes, viernes y domingo alternando A y B (si un día no puedes, la siguiente sesión sigue el orden). Jueves fútbol: el viernes, menos carga de pierna. ${ph.txt}</p>
+      <p class="muted small">Gimnasio lunes, viernes y fin de semana (sábado o domingo) alternando A y B (si un día no puedes, la siguiente sesión sigue el orden). Jueves fútbol: el viernes, menos carga de pierna. ${ph.txt}</p>
     </div>`;
 
   $("routineView").innerHTML = planHtml + Object.entries(ROUTINES).map(([k, list]) => `

@@ -30,22 +30,23 @@ function buildBody() {
   // Cabeza, cuello y tronco
   add(sph(0.105), [0, 1.69, 0], { scale: [0.92, 1.05, 1] });
   add(caps(0.048, 0.06), [0, 1.56, 0]);
-  add(caps(0.16, 0.3), [0, 1.27, 0], { scale: [1.3, 1, 0.68] });
-  add(sph(0.15), [0, 0.98, 0], { scale: [1.15, 0.7, 0.78] });
+  add(caps(0.15, 0.1), [0, 1.35, 0], { scale: [1.32, 1, 0.68] });   // tórax
+  add(caps(0.12, 0.12), [0, 1.13, 0], { scale: [1.12, 1, 0.66] });  // cintura
+  add(sph(0.15), [0, 0.97, 0], { scale: [1.1, 0.68, 0.76] });       // pelvis
 
   // Músculos del tronco
-  for (const s of [-1, 1]) add(sph(0.095), [s * 0.085, 1.37, 0.075], { scale: [1.05, 0.72, 0.45], muscle: "pecho" });
-  add(sph(0.12), [0, 1.3, -0.085], { scale: [1.55, 1.55, 0.38], muscle: "espalda" });
-  add(sph(0.09), [0, 1.12, 0.08], { scale: [1, 1.45, 0.38], muscle: "core" });
-  for (const s of [-1, 1]) add(sph(0.085), [s * 0.075, 0.95, -0.07], { scale: [1, 1, 0.8], muscle: "gluteos" });
+  for (const s of [-1, 1]) add(sph(0.1), [s * 0.075, 1.38, 0.07], { scale: [1.2, 0.78, 0.42], muscle: "pecho" });
+  add(sph(0.13), [0, 1.31, -0.075], { scale: [1.45, 1.5, 0.4], muscle: "espalda" });
+  add(caps(0.068, 0.13), [0, 1.13, 0.06], { scale: [1, 1, 0.45], muscle: "core" });
+  for (const s of [-1, 1]) add(sph(0.085), [s * 0.072, 0.94, -0.068], { scale: [1, 1, 0.8], muscle: "gluteos" });
 
   // Brazos
   for (const s of [-1, 1]) {
-    add(sph(0.072), [s * 0.255, 1.44, 0], { muscle: "hombros" });
-    add(caps(0.043, 0.15), [s * 0.28, 1.25, 0.022], { rot: [0, 0, s * 0.08], muscle: "biceps" });
-    add(caps(0.043, 0.15), [s * 0.28, 1.25, -0.022], { rot: [0, 0, s * 0.08], muscle: "triceps" });
-    add(caps(0.038, 0.19), [s * 0.305, 0.99, 0.01], { rot: [0, 0, s * 0.06] });
-    add(sph(0.045), [s * 0.315, 0.83, 0.015], { scale: [0.8, 1.15, 0.6] });
+    add(sph(0.07), [s * 0.245, 1.45, 0], { muscle: "hombros" });
+    add(caps(0.045, 0.15), [s * 0.27, 1.25, 0.022], { rot: [0, 0, s * 0.08], muscle: "biceps" });
+    add(caps(0.045, 0.15), [s * 0.27, 1.25, -0.022], { rot: [0, 0, s * 0.08], muscle: "triceps" });
+    add(caps(0.04, 0.19), [s * 0.295, 0.99, 0.01], { rot: [0, 0, s * 0.06] });
+    add(sph(0.045), [s * 0.305, 0.83, 0.015], { scale: [0.8, 1.15, 0.6] });
   }
 
   // Piernas
@@ -72,8 +73,8 @@ export function mountMannequin(container) {
   container.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(30, w / h, 0.1, 20);
-  camera.position.set(0, 1.05, 3.9);
+  camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 20);
+  camera.position.set(0, 1.0, 3.95);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0xe8e8e4, 1.6));
   const key = new THREE.DirectionalLight(0xffffff, 1.6);
@@ -94,7 +95,7 @@ export function mountMannequin(container) {
   scene.add(buildBody());
 
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.95, 0);
+  controls.target.set(0, 0.9, 0);
   controls.enableZoom = false;
   controls.enablePan = false;
   controls.enableDamping = true;

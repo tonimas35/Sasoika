@@ -45,9 +45,10 @@ function muscleMesh(name, geometry) {
 
 // ---------- utilidades de superficie ----------
 function interp(profile, y) {
-  if (y <= profile[0].y) return profile[0];
+  const norm = (p) => ({ y: p.y, x: p.x ?? 0, z: p.z ?? 0, rx: p.rx, rz: p.rz });
+  if (y <= profile[0].y) return norm(profile[0]);
   const last = profile[profile.length - 1];
-  if (y >= last.y) return last;
+  if (y >= last.y) return norm(last);
   for (let i = 0; i < profile.length - 1; i++) {
     const a = profile[i], b = profile[i + 1];
     if (y >= a.y && y <= b.y) {
@@ -55,7 +56,7 @@ function interp(profile, y) {
       return { y, x: lerp(a.x ?? 0, b.x ?? 0, s), z: lerp(a.z ?? 0, b.z ?? 0, s), rx: lerp(a.rx, b.rx, s), rz: lerp(a.rz, b.rz, s) };
     }
   }
-  return last;
+  return norm(last);
 }
 
 function grid(rows, cols, sampler) {

@@ -1,6 +1,6 @@
-# Sasoi
+# Indarka
 
-«Sasoian egon»: estar en forma, en euskera.
+«Indarka»: con fuerza, en euskera.
 
 App web mínima para registrar comidas y entrenos (objetivo: Vietnam, enero 2027).
 

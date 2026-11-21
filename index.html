@@ -27,9 +27,9 @@
   <section id="auth" class="screen hidden">
     <h1 class="brand">Sasoika</h1>
     <p class="muted">Comidas y entrenos, sin complicaciones.</p>
-    <form id="authForm" class="card">
-      <input id="email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="password" type="password" placeholder="Contraseña" autocomplete="current-password" minlength="6" required>
+    <form id="authForm" class="card" method="post" action="#" autocomplete="on">
+      <input id="email" name="username" type="email" placeholder="Email" autocomplete="username" required>
+      <input id="password" name="password" type="password" placeholder="Contraseña" autocomplete="current-password" minlength="6" required>
       <button type="submit" class="primary">Entrar</button>
       <button type="button" id="signupBtn" class="ghost">Crear cuenta</button>
       <p id="authMsg" class="muted small"></p>
@@ -199,6 +199,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=5"></script>
+<script type="module" src="app.js?v=6"></script>
 </body>
 </html>

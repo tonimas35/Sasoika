@@ -57,7 +57,12 @@ segmented("trainSeg", "train", (s) => s === "rutina" ? renderRoutineView() : loa
 // ---------- Auth ----------
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+  const email = $("email").value.trim(), password = $("password").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (!error) {
+    // Pide al navegador que guarde la contraseña (Chrome/Edge/Android); Safari lo detecta por el formulario
+    try { if (window.PasswordCredential) await navigator.credentials.store(new PasswordCredential({ id: email, password, name: email })); } catch {}
+  }
   if (error) $("authMsg").textContent = error.message === "Email not confirmed"
     ? "Confirma tu email (revisa la bandeja de entrada) y vuelve a entrar."
     : "No se ha podido entrar: " + error.message;

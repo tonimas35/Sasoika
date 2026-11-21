@@ -424,7 +424,7 @@ function exerciseCard(ex, mine, last) {
   card.className = "card";
   const lastTxt = last.length ? `Última vez (${relDay(last[0].workouts.day)}): ${last.map(setLabel).join(", ")}` : "Sin registros previos";
   card.innerHTML = `
-    <div class="ex-head"><span class="ex-name ${DETAILS[ex.name] ? "tap" : ""}">${esc(ex.name)}</span>${ex.target ? `<span class="ex-target">${ex.target}</span>` : ""}</div>
+    <div class="ex-head"><span class="ex-name ${DETAILS[ex.name] ? "tap" : ""}">${injuryNotes(ex.name).length ? "⚠️ " : ""}${esc(ex.name)}</span>${ex.target ? `<span class="ex-target">${ex.target}</span>` : ""}</div>
     <div class="ex-last">${esc(lastTxt)}</div>
     <div class="chips"></div>
     <form class="set-row">
@@ -546,6 +546,14 @@ async function renderRoutineView() {
 }
 
 // ---------- Ficha de ejercicio ----------
+// Avisos según las molestias marcadas en la evaluación
+const INJURY = {
+  rodilla: { ex: ["Prensa", "Curl femoral tumbado"], txt: "Tienes molestias de rodilla: recorrido corto (no bajes de 90°), peso ligero y para si notas dolor articular." },
+  espalda: { ex: ["Peso muerto rumano", "Remo en máquina", "Prensa", "Elevación de piernas"], txt: "Tienes molestias de espalda baja: espalda neutra siempre, poco peso y recorrido corto. En peso muerto rumano, baja solo hasta media pierna." },
+  hombro: { ex: ["Press militar", "Fondos", "Press pecho mancuernas", "Dominadas agarre neutro"], txt: "Tienes molestias de hombro: no bajes demasiado, codos cerca del cuerpo y peso ligero. Si los fondos molestan, cámbialos por press de pecho." },
+  muneca: { ex: ["Curl bíceps", "Plancha", "Fondos", "Press militar"], txt: "Tienes molestias de muñeca o codo: muñeca recta y agarre neutro. En la plancha, apoya sobre los antebrazos." },
+};
+const injuryNotes = (name) => (goals.injuries || []).filter((k) => INJURY[k]?.ex.includes(name)).map((k) => INJURY[k].txt);
 let notesTimer = null;
 async function openSheet(ex) {
   const d = DETAILS[ex.name]; if (!d) return;
@@ -562,6 +570,9 @@ async function openSheet(ex) {
   $("shSteps").innerHTML = d.steps.map((x) => `<li>${esc(x)}</li>`).join("");
   $("shErrors").innerHTML = d.errors.map((x) => `<li>${esc(x)}</li>`).join("");
   $("shBreath").textContent = d.breath;
+  const warns = injuryNotes(ex.name);
+  $("shWarn").classList.toggle("hidden", !warns.length);
+  $("shWarn").innerHTML = warns.map((w) => `<p>⚠️ ${esc(w)}</p>`).join("");
   $("shHist").textContent = "Cargando…"; $("shNotes").value = ""; $("shNotesSt").textContent = "";
   $("sheet").classList.remove("hidden"); document.body.style.overflow = "hidden";
   $("sheet").querySelector(".sheet-panel").scrollTop = 0;

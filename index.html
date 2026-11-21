@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=9">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -159,6 +159,10 @@
   <!-- Progreso -->
   <section id="progreso" class="screen hidden">
     <header class="top"><h1>Progreso</h1></header>
+    <div class="card"><div class="row-between"><h3>Actividad</h3><span class="label" id="actSummary"></span></div>
+      <div id="activity" class="activity"></div>
+      <div class="act-legend"><span><i class="l1"></i>Comidas</span><span><i class="l2"></i>Fútbol / cardio</span><span><i class="l3"></i>Gimnasio</span><span><i class="ev"></i>Viaje</span></div>
+    </div>
     <div class="card"><h3>Peso corporal</h3><div id="chartWeight" class="chart"></div></div>
     <div class="card"><h3>Cintura</h3><div id="chartWaist" class="chart"></div></div>
     <div class="card">
@@ -199,6 +203,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=8"></script>
+<script type="module" src="app.js?v=9"></script>
 </body>
 </html>

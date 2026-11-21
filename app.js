@@ -501,7 +501,7 @@ async function renderRoutineView() {
 
 // ---------- Progreso ----------
 async function loadProgreso() {
-  const since = new Date(); since.setDate(since.getDate() - 30);
+  const since = new Date(); since.setDate(since.getDate() - 90);
   const [body, sets, workouts, meals] = await Promise.all([
     sb.from("body").select("day, weight_kg, waist_cm").order("day"),
     sb.from("sets").select("exercise, weight_kg, reps, seconds, workouts!inner(day)").order("created_at").limit(5000),
@@ -539,7 +539,32 @@ async function loadProgreso() {
 
   const pd = {};
   (meals.data || []).forEach((m) => { const d = dayOf(m.eaten_at); pd[d] = (pd[d] || 0) + Number(m.protein || 0); });
-  lineChart($("chartProt"), Object.entries(pd).sort(), "g", goals.protein);
+  const last30 = addDays(todayStr(), -30);
+  lineChart($("chartProt"), Object.entries(pd).filter(([d]) => d >= last30).sort(), "g", goals.protein);
+  activityMap($("activity"), workouts.data || [], pd);
+}
+
+// Mapa de actividad tipo GitHub: desde el inicio del plan hasta el viaje
+function activityMap(el, workouts, mealDays) {
+  const today = todayStr();
+  const start = mondayOf(goals.start_date && goals.start_date < today ? goals.start_date : addDays(today, -27));
+  const endEv = goals.event_date && goals.event_date > today ? goals.event_date : addDays(today, 14);
+  const end = addDays(mondayOf(endEv), 6);
+  const lvl = {};
+  Object.keys(mealDays).forEach((d) => (lvl[d] = 1));
+  workouts.forEach((w) => { const v = w.kind === "A" || w.kind === "B" ? 3 : 2; lvl[w.day] = Math.max(lvl[w.day] || 0, v); });
+  const weeks = Math.round(daysBetween(start, end) / 7) + 1;
+  let html = `<div class="act-days"><span>L</span><span></span><span>X</span><span></span><span>V</span><span></span><span>D</span></div><div class="act-grid" style="grid-template-columns:repeat(${weeks},1fr)">`;
+  for (let w = 0; w < weeks; w++) for (let i = 0; i < 7; i++) {
+    const d = addDays(start, w * 7 + i);
+    const cls = d === goals.event_date ? "ev" : d > today ? "fut" : `l${lvl[d] || 0}`;
+    const label = new Date(d + "T12:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+    html += `<i class="${cls} ${d === today ? "today" : ""}" style="grid-column:${w + 1};grid-row:${i + 1}" title="${label}"></i>`;
+  }
+  el.innerHTML = html + "</div>";
+  const gym = workouts.filter((w) => (w.kind === "A" || w.kind === "B") && w.day >= start).length;
+  const active = Object.keys(lvl).filter((d) => d >= start && lvl[d] >= 2).length;
+  $("actSummary").textContent = `${gym} gimnasio · ${active} días activos`;
 }
 
 function lineChart(el, pts, unit, target) {

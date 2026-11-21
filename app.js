@@ -270,12 +270,13 @@ $("bodyForm").addEventListener("submit", async (e) => {
 // ---------- Comidas ----------
 async function loadComidas() {
   const since = new Date(); since.setDate(since.getDate() - 60);
-  const [today, recent] = await Promise.all([
+  const [today, recent, favs] = await Promise.all([
     sb.from("meals").select("*").gte("eaten_at", startOfToday()).order("eaten_at"),
     sb.from("meals").select("name, kcal, protein, eaten_at, status").gte("eaten_at", since.toISOString()).order("eaten_at", { ascending: false }),
+    sb.from("favorite_meals").select("name, kcal, protein").order("created_at"),
   ]);
   renderToday(today.data || []);
-  renderFrequent(recent.data || []);
+  renderFrequent(recent.data || [], favs.data || []);
 }
 
 function renderToday(meals) {
@@ -307,14 +308,16 @@ function renderToday(meals) {
   });
 }
 
-function renderFrequent(recent) {
+function renderFrequent(recent, favs = []) {
   const by = {};
+  favs.forEach((f) => (by[f.name.trim().toLowerCase()] = { name: f.name, kcal: f.kcal, protein: f.protein, n: 1e6 }));
   recent.filter((m) => m.status !== "pendiente").forEach((m) => {
     const k = m.name.trim().toLowerCase();
     if (!by[k]) by[k] = { name: m.name.trim(), kcal: m.kcal, protein: m.protein, n: 0 };
+    else if (by[k].n >= 1e6) return;
     by[k].n++;
   });
-  const list = Object.values(by).sort((a, b) => b.n - a.n).slice(0, 10);
+  const list = Object.values(by).sort((a, b) => b.n - a.n).slice(0, 12);
   $("frequentWrap").classList.toggle("hidden", list.length === 0);
   const box = $("frequent"); box.innerHTML = "";
   list.forEach((f) => {

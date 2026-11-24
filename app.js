@@ -581,7 +581,11 @@ function exerciseCard(ex, mine, last) {
     c.className = "chip"; c.textContent = setLabel(s); c.title = "Toca para borrar";
     c.onclick = async () => {
       if (!confirm(`¿Borrar la serie ${c.textContent}?`)) return;
-      if (!fail((await sb.from("sets").delete().eq("id", s.id)).error)) loadEntrenos();
+      if (fail((await sb.from("sets").delete().eq("id", s.id)).error)) return;
+      // Si era la última serie del día, borrar también el entreno vacío
+      const { count } = await sb.from("sets").select("id", { count: "exact", head: true }).eq("workout_id", s.workout_id);
+      if (!count) await sb.from("workouts").delete().eq("id", s.workout_id);
+      loadEntrenos();
     };
     chips.appendChild(c);
   });

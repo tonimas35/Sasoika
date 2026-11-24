@@ -350,3 +350,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); backgroun
 .day-pick { align-items: center; justify-content: space-between; padding: 10px 14px; }
 .day-pick select { width: auto; flex: 0 0 auto; padding: 8px 12px; text-transform: capitalize; }
 .set-row button.add-set { flex: 0 0 auto; padding: 0 14px; font-size: 14px; font-weight: 600; }
+.finish-card { gap: 12px; }
+.summary-panel { display: flex; flex-direction: column; gap: 12px; align-items: stretch; text-align: left; }
+.summary-panel .ob-avatar { align-self: flex-start; }

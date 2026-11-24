@@ -495,6 +495,55 @@ async function loadEntrenos() {
     const last = prev.filter((s) => s.workout_id === lastWid).reverse();
     $("exercises").appendChild(exerciseCard(ex, mine, last));
   });
+
+  // Estado del entreno y botón de terminar
+  const status = document.createElement("div");
+  status.className = "card finish-card";
+  if (!todaySets.length) {
+    status.innerHTML = `<p class="muted small" style="margin:0">Aún no hay series en este día. Cada serie se guarda al pulsar ＋ Serie.</p>`;
+  } else {
+    const n = todaySets.length, exs = new Set(todaySets.map((x) => x.exercise)).size;
+    status.innerHTML = `<p style="margin:0"><b>✓ Guardado:</b> ${n} ${n === 1 ? "serie" : "series"} de ${exs} ${exs === 1 ? "ejercicio" : "ejercicios"}${w.finished_at ? " · entreno terminado" : ""}.</p>
+      <button class="primary wide" id="finishBtn">${w.finished_at ? "Ver resumen" : "✅ Terminar entreno"}</button>`;
+    status.querySelector("#finishBtn").onclick = () => finishWorkout(w, todaySets, sets);
+  }
+  $("exercises").appendChild(status);
+}
+
+async function finishWorkout(w, mine, all) {
+  if (!w.finished_at) {
+    const { error } = await sb.from("workouts").update({ finished_at: new Date().toISOString() }).eq("id", w.id);
+    if (fail(error)) return;
+    w.finished_at = new Date().toISOString();
+  }
+  const t = mine.map((x) => new Date(x.created_at).getTime());
+  const mins = Math.max(1, Math.round((Math.max(...t) - Math.min(...t)) / 60000));
+  const volume = mine.reduce((acc, x) => acc + (Number(x.weight_kg) || 0) * (x.reps || 0), 0);
+  // Mejores marcas frente a sesiones anteriores
+  const score = (x) => (Number(x.weight_kg) > 0 ? Number(x.weight_kg) * 1000 + (x.reps || 0) : (x.reps || x.seconds || 0));
+  const prs = [];
+  for (const ex of new Set(mine.map((x) => x.exercise))) {
+    const best = Math.max(...mine.filter((x) => x.exercise === ex).map(score));
+    const before = all.filter((x) => x.exercise === ex && x.workout_id !== w.id && x.workouts.day < w.day);
+    if (before.length && best > Math.max(...before.map(score))) {
+      prs.push(`${ex}: ${setLabel(mine.filter((x) => x.exercise === ex).reduce((a, b) => (score(b) > score(a) ? b : a)))}`);
+    }
+  }
+  const box = $("summary");
+  box.innerHTML = `<div class="sheet-panel summary-panel">
+    <div class="ob-avatar">✓</div>
+    <h2>Entreno guardado</h2>
+    <p class="muted" style="margin:0">${esc(KIND_LABEL[w.kind] || w.kind)} · ${new Date(w.day + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}</p>
+    <div class="sheet-stats">
+      <div><span class="label">Series</span><b>${mine.length}</b></div>
+      <div><span class="label">Duración</span><b>${mins} min</b></div>
+      <div><span class="label">Kilos movidos</span><b>${fmt(volume, 0)}</b></div>
+    </div>
+    <div class="sheet-sec"><h3>Mejores marcas</h3><p>${prs.length ? prs.map((x) => "🏆 " + esc(x)).join("<br>") : "Hoy no has batido marcas: lo importante es la constancia. ¡La próxima!"}</p></div>
+    <p class="muted small">La próxima vez que toque esta rutina verás estos pesos como "Última vez" para superarlos.</p>
+    <button class="primary wide" id="summaryOk">Hecho</button></div>`;
+  box.classList.remove("hidden");
+  $("summaryOk").onclick = () => { box.classList.add("hidden"); loadEntrenos(); };
 }
 
 function setLabel(s) {

@@ -437,14 +437,23 @@ async function nextRoutine() {
   return { kind: last?.kind === "A" ? "B" : "A", today: false };
 }
 
+const workDay = () => $("workDay").value || todayStr();
+function fillWorkDay() {
+  const sel = $("workDay"), cur = sel.value || todayStr();
+  const opts = [0, 1, 2, 3, 4, 5, 6].map((n) => addDays(todayStr(), -n));
+  sel.innerHTML = opts.map((d, n) => `<option value="${d}">${n === 0 ? "Hoy" : n === 1 ? "Ayer" : new Date(d + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric" })}</option>`).join("");
+  sel.value = opts.includes(cur) ? cur : todayStr();
+}
+$("workDay").addEventListener("change", () => { extraExercises = []; loadEntrenos(); });
 async function todayWorkout(kind, create = false) {
-  const { data } = await sb.from("workouts").select("*").eq("day", todayStr()).eq("kind", kind).order("id").limit(1);
+  const { data } = await sb.from("workouts").select("*").eq("day", workDay()).eq("kind", kind).order("id").limit(1);
   if (data?.[0] || !create) return data?.[0] || null;
-  const { data: w, error } = await sb.from("workouts").insert({ kind, day: todayStr() }).select().single();
+  const { data: w, error } = await sb.from("workouts").insert({ kind, day: workDay() }).select().single();
   fail(error); return w;
 }
 
 async function loadEntrenos() {
+  fillWorkDay();
   renderKindSeg();
   const next = await nextRoutine();
   if (!currentKind) currentKind = classes() ? "Clase" : next.kind;
@@ -513,7 +522,7 @@ function exerciseCard(ex, mine, last) {
         ? `<input type="number" inputmode="numeric" placeholder="segundos" name="seconds" required>`
         : `<input type="number" inputmode="decimal" step="0.5" placeholder="${ex.bodyweight ? "lastre kg" : "kg"}" name="weight">
            <input type="number" inputmode="numeric" placeholder="reps" name="reps" required>`}
-      <button class="primary" type="submit">＋</button>
+      <button class="primary add-set" type="submit">＋ Serie</button>
     </form>`;
 
   card.querySelector(".ex-name.tap")?.addEventListener("click", () => openSheet(ex));
@@ -573,7 +582,14 @@ $("simpleSave").onclick = async () => {
   if (!fail((await sb.from("workouts").update({ notes: $("simpleNotes").value || null }).eq("id", w.id)).error)) { toast("Registrado"); loadEntrenos(); }
 };
 
-// Plan semanal: lunes, viernes y domingo gimnasio (alternando A/B); jueves fútbol
+function goRegister() {
+  show("entrenos");
+  document.querySelector('#trainSeg button[data-sub="registrar"]').click();
+}
+$("goRegister").onclick = goRegister;
+$("homeRegister").onclick = goRegister;
+
+// Plan semanal
 // Plan según la evaluación: días de gimnasio y deporte fijo (getDay(): 0 = domingo)
 const planOf = (dow) => (goals.gym_days || [1, 5, 0]).includes(dow) ? "gym" : goals.sport_day === dow ? "Futbol" : null;
 const DOW = ["L", "M", "X", "J", "V", "S", "D"];

@@ -347,3 +347,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--blue); backgroun
 #inicio .tiles .tile:nth-child(2) { --ic: "🥩"; }
 #inicio .tiles .tile:nth-child(3) { --ic: "⚖️"; }
 #inicio .tiles .tile:nth-child(4) { --ic: "📏"; }
+.day-pick { align-items: center; justify-content: space-between; padding: 10px 14px; }
+.day-pick select { width: auto; flex: 0 0 auto; padding: 8px 12px; text-transform: capitalize; }
+.set-row button.add-set { flex: 0 0 auto; padding: 0 14px; font-size: 14px; font-weight: 600; }

@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=23">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -58,6 +58,8 @@
       <div class="tile"><span class="label">Peso</span><div class="big" id="sumWeight">–</div><div class="label" id="sumWeightSub">registra tu peso</div></div>
       <div class="tile"><span class="label">Cintura</span><div class="big" id="sumWaist">–</div><div class="label" id="sumWaistSub">registra tu cintura</div></div>
     </div>
+
+    <button class="primary wide" id="homeRegister" style="margin:4px 0 6px">🏋️ Registrar entreno</button>
 
     <div class="section-head"><h2>Objetivos</h2><button class="link" id="editGoals">Editar</button></div>
     <div class="card goal-event">
@@ -137,12 +139,14 @@
   <section id="entrenos" class="screen hidden">
     <header class="top"><h1>Entrenos</h1></header>
     <div class="seg two" id="trainSeg">
-      <button data-sub="registrar" class="active">Registrar</button>
-      <button data-sub="rutina">Rutina</button>
+      <button data-sub="registrar" class="active">Registrar entreno</button>
+      <button data-sub="rutina">Plan y técnica</button>
     </div>
 
     <div id="train-registrar">
+      <div class="card row day-pick"><span class="label">Día del entreno</span><select id="workDay"></select></div>
       <div class="seg" id="kindSeg"></div>
+      <p class="muted small pad">Al acabar cada serie, pon el peso y las repeticiones y pulsa <b>＋ Serie</b>. Si bajas el peso, cámbialo antes de añadirla. Toca un ejercicio para ver cómo se hace.</p>
       <p class="muted small pad" id="nextHint"></p>
       <div id="exercises"></div>
       <form id="extraForm" class="card row">
@@ -157,6 +161,7 @@
     </div>
 
     <div id="train-rutina" class="hidden">
+      <button class="primary wide" id="goRegister" style="margin-bottom:6px">🏋️ Registrar el entreno de hoy</button>
       <div id="routineView"></div>
     </div>
   </section>
@@ -235,6 +240,6 @@
   </nav>
   <div id="toast" class="toast"></div>
 </div>
-<script type="module" src="app.js?v=22"></script>
+<script type="module" src="app.js?v=23"></script>
 </body>
 </html>
